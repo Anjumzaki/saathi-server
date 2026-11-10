@@ -1,0 +1,411 @@
+{
+  "schemaVersion": 1,
+  "notes": [
+    "One Dataset per onboarding/settings question. Screens render from this, never from hard-coded lists.",
+    "selection: single | multi. allowCustom: user can add an option (stored as source:'user').",
+    "showIf: dataset becomes visible when ANY listed answer is selected in the referenced dataset (answer-dependent follow-ups).",
+    "regions: option shown only for these country codes; omit = global. labelUr to be filled for Urdu."
+  ],
+  "datasets": [
+    {
+      "key": "goals", "question": "What are you here for?", "selection": "multi", "allowCustom": true, "minPick": 1,
+      "options": [
+        { "id": "weight_loss", "label": "Lose weight", "icon": "Scale" },
+        { "id": "pcos", "label": "Manage PCOS", "icon": "Flower" },
+        { "id": "conceive", "label": "Trying to conceive", "icon": "Heart" },
+        { "id": "regular_periods", "label": "Regular periods" },
+        { "id": "insulin", "label": "Insulin resistance / sugar control" },
+        { "id": "thyroid", "label": "Thyroid support" },
+        { "id": "energy", "label": "More energy" },
+        { "id": "sleep", "label": "Better sleep" },
+        { "id": "strength", "label": "Get stronger / toned" },
+        { "id": "skin_hair", "label": "Skin & hair" },
+        { "id": "post_pregnancy", "label": "Post-pregnancy recovery" },
+        { "id": "feel_good", "label": "Just feel good" }
+      ]
+    },
+    {
+      "key": "diet_pattern", "question": "Any eating pattern we should respect?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "halal", "label": "Halal only" },
+        { "id": "no_beef", "label": "No beef" },
+        { "id": "no_pork", "label": "No pork" },
+        { "id": "vegetarian", "label": "Vegetarian" },
+        { "id": "eggetarian", "label": "Vegetarian + eggs" },
+        { "id": "vegan", "label": "Vegan" },
+        { "id": "no_dairy", "label": "No dairy" },
+        { "id": "no_gluten", "label": "No gluten" },
+        { "id": "low_spice", "label": "Low spice" },
+        { "id": "none", "label": "Nothing special" }
+      ]
+    },
+    {
+      "key": "cuisine", "question": "What do you mostly eat?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "pakistani", "label": "Pakistani / desi" },
+        { "id": "indian", "label": "Indian" },
+        { "id": "arab", "label": "Arab / Gulf" },
+        { "id": "turkish", "label": "Turkish" },
+        { "id": "western", "label": "Western" },
+        { "id": "east_asian", "label": "Chinese / East Asian" },
+        { "id": "mediterranean", "label": "Mediterranean" },
+        { "id": "mixed", "label": "A bit of everything" }
+      ]
+    },
+    {
+      "key": "cooks", "question": "Who usually cooks?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "me", "label": "Me" },
+        { "id": "spouse", "label": "My spouse" },
+        { "id": "mother", "label": "Mother / mother-in-law" },
+        { "id": "family", "label": "Other family" },
+        { "id": "help", "label": "House help" },
+        { "id": "cook", "label": "A hired cook" },
+        { "id": "ordered", "label": "Mostly ordered / eating out" },
+        { "id": "office_canteen", "label": "Office canteen" }
+      ]
+    },
+    {
+      "key": "usual_foods", "question": "Usually at home", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "roti", "label": "Bread / roti", "tags": ["carb"] },
+        { "id": "brown_roti", "label": "Whole-wheat / bran roti", "tags": ["carb"] },
+        { "id": "rice", "label": "Rice", "tags": ["carb"] },
+        { "id": "oats", "label": "Oats", "tags": ["carb"] },
+        { "id": "quinoa", "label": "Quinoa", "tags": ["carb"] },
+        { "id": "lentils", "label": "Lentils / daal", "tags": ["protein"] },
+        { "id": "chickpeas", "label": "Chickpeas / beans", "tags": ["protein"] },
+        { "id": "chicken", "label": "Chicken", "tags": ["protein"] },
+        { "id": "fish", "label": "Fish", "tags": ["protein"] },
+        { "id": "red_meat", "label": "Beef / mutton", "tags": ["protein"] },
+        { "id": "eggs", "label": "Eggs", "tags": ["protein"] },
+        { "id": "paneer", "label": "Paneer / cottage cheese", "tags": ["protein"] },
+        { "id": "yogurt", "label": "Yogurt", "tags": ["dairy"] },
+        { "id": "milk", "label": "Milk", "tags": ["dairy"] },
+        { "id": "sabzi", "label": "Vegetable sabzi", "tags": ["veg"] },
+        { "id": "salad", "label": "Salad", "tags": ["veg"] },
+        { "id": "fruit", "label": "Fruit", "tags": ["fruit"] },
+        { "id": "nuts_seeds", "label": "Nuts & seeds", "tags": ["fat"] }
+      ]
+    },
+    {
+      "key": "never_foods", "question": "Never for me", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "bitter_gourd", "label": "Bitter gourd (karela)" },
+        { "id": "fish", "label": "Fish" },
+        { "id": "seafood", "label": "Prawns / seafood" },
+        { "id": "mushroom", "label": "Mushroom" },
+        { "id": "eggplant", "label": "Eggplant" },
+        { "id": "okra", "label": "Okra (bhindi)" },
+        { "id": "red_meat", "label": "Beef / mutton" },
+        { "id": "eggs", "label": "Eggs" },
+        { "id": "dairy", "label": "Milk / dairy" },
+        { "id": "nuts", "label": "Nuts" },
+        { "id": "coriander", "label": "Coriander" },
+        { "id": "spicy", "label": "Very spicy food" },
+        { "id": "none", "label": "I eat everything" }
+      ]
+    },
+    {
+      "key": "allergies", "question": "Any allergies or intolerances?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "none", "label": "None" },
+        { "id": "lactose", "label": "Lactose" },
+        { "id": "gluten", "label": "Gluten" },
+        { "id": "nuts", "label": "Nuts" },
+        { "id": "peanut", "label": "Peanuts" },
+        { "id": "egg", "label": "Eggs" },
+        { "id": "shellfish", "label": "Shellfish" },
+        { "id": "soy", "label": "Soy" },
+        { "id": "sesame", "label": "Sesame" }
+      ]
+    },
+    {
+      "key": "cook_minutes", "question": "Time to cook", "selection": "single", "allowCustom": false,
+      "options": [
+        { "id": "15", "label": "15 min" },
+        { "id": "30", "label": "30 min" },
+        { "id": "60", "label": "1 hour+" },
+        { "id": "0", "label": "I don't cook" }
+      ]
+    },
+    {
+      "key": "kitchen_tools", "question": "What do you have in the kitchen?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "air_fryer", "label": "Air fryer" },
+        { "id": "oven", "label": "Oven" },
+        { "id": "microwave", "label": "Microwave" },
+        { "id": "blender", "label": "Blender" },
+        { "id": "pressure_cooker", "label": "Pressure cooker" },
+        { "id": "grill_pan", "label": "Grill pan" },
+        { "id": "freezer", "label": "Freezer space for batch cooking" },
+        { "id": "basic", "label": "Just a stove" }
+      ]
+    },
+    {
+      "key": "drinks", "question": "What do you usually drink?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "water", "label": "Plain water" },
+        { "id": "chai", "label": "Chai with milk" },
+        { "id": "green_tea", "label": "Green tea" },
+        { "id": "coffee", "label": "Coffee" },
+        { "id": "herbal", "label": "Herbal / fenugreek tea" },
+        { "id": "lemon_water", "label": "Lemon water" },
+        { "id": "soda", "label": "Soft drinks" },
+        { "id": "juice", "label": "Packaged juice" },
+        { "id": "lassi", "label": "Lassi / milk drinks" }
+      ]
+    },
+    {
+      "key": "work_kind", "question": "Do you work or study?", "selection": "single", "allowCustom": true,
+      "options": [
+        { "id": "home", "label": "Work from home" },
+        { "id": "office", "label": "Office / on-site" },
+        { "id": "shifts", "label": "Shift work" },
+        { "id": "business", "label": "Own business / shop" },
+        { "id": "study", "label": "Student" },
+        { "id": "homemaker", "label": "Home / family" },
+        { "id": "none", "label": "Not right now" }
+      ]
+    },
+    {
+      "key": "focus_behavior", "question": "During focus hours, reminders should…", "selection": "single", "allowCustom": false,
+      "showIf": { "work_kind": ["home", "office", "shifts", "business", "study"] },
+      "options": [
+        { "id": "silent", "label": "Stay silent, catch up after" },
+        { "id": "hold", "label": "Hold until a break" },
+        { "id": "meals", "label": "Only meals get through" }
+      ]
+    },
+    {
+      "key": "quiet_times", "question": "Quiet times we should respect", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "prayer", "label": "Prayer times", "regions": ["PK", "AE", "SA", "QA", "KW", "BH", "OM", "BD", "IN", "MY", "ID", "EG", "TR"] },
+        { "id": "nap", "label": "Afternoon nap" },
+        { "id": "kids_bedtime", "label": "Kids' bedtime" },
+        { "id": "meetings", "label": "Calendar meetings" },
+        { "id": "none", "label": "None" }
+      ]
+    },
+    {
+      "key": "fasting", "question": "Do you fast?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "ramadan", "label": "Ramadan" },
+        { "id": "mon_thu", "label": "Mondays & Thursdays" },
+        { "id": "ayyam_beed", "label": "13th–15th of the lunar month" },
+        { "id": "intermittent", "label": "Intermittent fasting" },
+        { "id": "religious_other", "label": "Other religious fasts" },
+        { "id": "no", "label": "No" }
+      ]
+    },
+    {
+      "key": "walk_where", "question": "Where can you walk?", "selection": "multi", "allowCustom": true, "minPick": 1,
+      "options": [
+        { "id": "park", "label": "Park nearby", "icon": "Trees" },
+        { "id": "street", "label": "Street / neighbourhood" },
+        { "id": "treadmill", "label": "Treadmill", "icon": "Treadmill" },
+        { "id": "home", "label": "At home (spot walking)", "icon": "Home" },
+        { "id": "garden", "label": "Garden / rooftop" },
+        { "id": "gym", "label": "Gym" },
+        { "id": "mall", "label": "Mall / indoor" },
+        { "id": "office", "label": "Office / stairs" },
+        { "id": "campus", "label": "Campus" },
+        { "id": "track", "label": "Walking track" }
+      ]
+    },
+    {
+      "key": "walk_when", "question": "When do walks fit best?", "selection": "multi", "allowCustom": false,
+      "options": [
+        { "id": "early_morning", "label": "Early morning" },
+        { "id": "after_breakfast", "label": "After breakfast" },
+        { "id": "after_lunch", "label": "After lunch" },
+        { "id": "evening", "label": "Evening" },
+        { "id": "after_dinner", "label": "After dinner" },
+        { "id": "night", "label": "Late night" }
+      ]
+    },
+    {
+      "key": "walk_company", "question": "Who do you walk with?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "alone", "label": "Alone" },
+        { "id": "spouse", "label": "Spouse" },
+        { "id": "friend", "label": "A friend" },
+        { "id": "family", "label": "Family" },
+        { "id": "kids", "label": "With the kids" },
+        { "id": "group", "label": "Walking group" }
+      ]
+    },
+    {
+      "key": "home_equipment", "question": "What do you have at home?", "selection": "multi", "allowCustom": true,
+      "showIf": { "walk_where": ["home", "treadmill", "garden"] },
+      "options": [
+        { "id": "treadmill", "label": "Treadmill" },
+        { "id": "cycle", "label": "Exercise cycle" },
+        { "id": "dumbbells", "label": "Dumbbells" },
+        { "id": "bands", "label": "Resistance bands" },
+        { "id": "mat", "label": "Yoga mat" },
+        { "id": "rope", "label": "Skipping rope" },
+        { "id": "stairs", "label": "Stairs" },
+        { "id": "none", "label": "Nothing yet" }
+      ]
+    },
+    {
+      "key": "treadmill_setup", "question": "Your treadmill", "selection": "multi", "allowCustom": false,
+      "showIf": { "walk_where": ["treadmill"], "home_equipment": ["treadmill"] },
+      "options": [
+        { "id": "incline", "label": "Has incline" },
+        { "id": "no_incline", "label": "No incline" },
+        { "id": "manual", "label": "Manual (non-motorised)" },
+        { "id": "gym_treadmill", "label": "Use the gym's" }
+      ]
+    },
+    {
+      "key": "exercise_types", "question": "What kind of movement do you enjoy?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "walking", "label": "Walking" },
+        { "id": "treadmill", "label": "Treadmill" },
+        { "id": "strength", "label": "Strength training" },
+        { "id": "home_video", "label": "Home workouts (videos)" },
+        { "id": "yoga", "label": "Yoga" },
+        { "id": "pilates", "label": "Pilates" },
+        { "id": "cycling", "label": "Cycling" },
+        { "id": "swimming", "label": "Swimming" },
+        { "id": "dance", "label": "Dance" },
+        { "id": "sports", "label": "A sport (badminton, etc.)" },
+        { "id": "stairs", "label": "Stair climbing" },
+        { "id": "housework", "label": "Housework counts!" }
+      ]
+    },
+    {
+      "key": "fitness_level", "question": "Where are you starting from?", "selection": "single", "allowCustom": false,
+      "options": [
+        { "id": "new", "label": "Just starting" },
+        { "id": "some", "label": "Move a little, not regularly" },
+        { "id": "regular", "label": "Exercise a few times a week" },
+        { "id": "active", "label": "Very active" }
+      ]
+    },
+    {
+      "key": "movement_barriers", "question": "What usually gets in the way?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "time", "label": "No time" },
+        { "id": "energy", "label": "Low energy" },
+        { "id": "pain", "label": "Knee / back / joint pain" },
+        { "id": "space", "label": "No space at home" },
+        { "id": "weather", "label": "Heat, smog or rain" },
+        { "id": "privacy", "label": "No private place to walk" },
+        { "id": "kids", "label": "Kids / caregiving" },
+        { "id": "motivation", "label": "Motivation" },
+        { "id": "shy", "label": "Feel shy exercising" },
+        { "id": "none", "label": "Nothing really" }
+      ]
+    },
+    {
+      "key": "weather_rules", "question": "Move walks indoors when…", "selection": "multi", "allowCustom": false,
+      "options": [
+        { "id": "aqi", "label": "Air quality is bad" },
+        { "id": "heat", "label": "It's very hot" },
+        { "id": "cold", "label": "It's very cold" },
+        { "id": "rain", "label": "It's raining" },
+        { "id": "never", "label": "Never, I'll decide" }
+      ]
+    },
+    {
+      "key": "sleep_issues", "question": "How is sleep going?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "fine", "label": "Fine" },
+        { "id": "fall_asleep", "label": "Hard to fall asleep" },
+        { "id": "wake_night", "label": "Wake up at night" },
+        { "id": "late", "label": "Sleep very late" },
+        { "id": "short", "label": "Not enough hours" },
+        { "id": "phone", "label": "Phone keeps me up" },
+        { "id": "irregular", "label": "Different every day" }
+      ]
+    },
+    {
+      "key": "cycle_pattern", "question": "Your periods are…", "selection": "single", "allowCustom": false,
+      "showIf": { "goals": ["pcos", "conceive", "regular_periods"] },
+      "options": [
+        { "id": "regular", "label": "Regular (same length)" },
+        { "id": "slightly_irregular", "label": "A few days off each time" },
+        { "id": "irregular", "label": "Very irregular" },
+        { "id": "absent", "label": "Missing for months" },
+        { "id": "unsure", "label": "Not sure" }
+      ]
+    },
+    {
+      "key": "cycle_symptoms", "question": "Around your period you get…", "selection": "multi", "allowCustom": true,
+      "showIf": { "goals": ["pcos", "conceive", "regular_periods"] },
+      "options": [
+        { "id": "cramps", "label": "Cramps" },
+        { "id": "bloating", "label": "Bloating" },
+        { "id": "cravings", "label": "Cravings" },
+        { "id": "mood", "label": "Mood swings" },
+        { "id": "acne", "label": "Acne" },
+        { "id": "fatigue", "label": "Tiredness" },
+        { "id": "headache", "label": "Headaches" },
+        { "id": "none", "label": "Nothing much" }
+      ]
+    },
+    {
+      "key": "supplements_taking", "question": "Already taking any of these?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "inositol", "label": "Inositol" },
+        { "id": "vit_d", "label": "Vitamin D" },
+        { "id": "iron", "label": "Iron / folic acid" },
+        { "id": "calcium", "label": "Calcium" },
+        { "id": "magnesium", "label": "Magnesium" },
+        { "id": "zinc", "label": "Zinc" },
+        { "id": "omega3", "label": "Omega-3" },
+        { "id": "multivitamin", "label": "Multivitamin" },
+        { "id": "moringa", "label": "Moringa" },
+        { "id": "none", "label": "None" }
+      ]
+    },
+    {
+      "key": "plan_source", "question": "Where does your plan come from?", "selection": "single", "allowCustom": false,
+      "options": [
+        { "id": "dietitian_pdf", "label": "My dietitian gave me a PDF / photo", "tags": ["premium"] },
+        { "id": "chat", "label": "It's in a chat (WhatsApp)", "tags": ["premium"] },
+        { "id": "paper", "label": "On paper, I'll type it in" },
+        { "id": "build", "label": "Build one with Saathi" },
+        { "id": "own", "label": "I'll write my own" },
+        { "id": "marketplace", "label": "Find a dietitian" }
+      ]
+    },
+    {
+      "key": "together_ideas", "question": "Connection ideas", "selection": "multi", "allowCustom": true,
+      "showIf": { "goals": ["conceive"] },
+      "options": [
+        { "id": "movie", "label": "Movie night" },
+        { "id": "cook", "label": "Cook together" },
+        { "id": "walk", "label": "Evening walk" },
+        { "id": "chai", "label": "Chai + talk" },
+        { "id": "early_night", "label": "Early night" },
+        { "id": "dress_up", "label": "Dress up" },
+        { "id": "massage", "label": "A massage" },
+        { "id": "flowers", "label": "Flowers" },
+        { "id": "drive", "label": "Long drive" }
+      ]
+    },
+    {
+      "key": "reminder_style", "question": "How should Saathi talk to you?", "selection": "single", "allowCustom": false,
+      "options": [
+        { "id": "gentle", "label": "Gentle" },
+        { "id": "cheerful", "label": "Cheerful" },
+        { "id": "straight", "label": "Straight to the point" },
+        { "id": "strict", "label": "Keep me honest" }
+      ]
+    },
+    {
+      "key": "support_people", "question": "Who's cheering you on?", "selection": "multi", "allowCustom": true,
+      "options": [
+        { "id": "spouse", "label": "Spouse" },
+        { "id": "sister", "label": "Sister / friend" },
+        { "id": "mother", "label": "Mother" },
+        { "id": "dietitian", "label": "My dietitian" },
+        { "id": "nobody", "label": "Just me for now" }
+      ]
+    }
+  ]
+}
