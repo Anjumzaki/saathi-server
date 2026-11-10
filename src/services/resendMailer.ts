@@ -1,4 +1,5 @@
 import type { Mailer } from '../interfaces';
+import { ApiError } from '../utils/errors';
 import { log } from '../utils/logger';
 
 /** Sends mail through Resend's HTTPS API (https://resend.com). The sending domain must be verified there. */
@@ -14,7 +15,7 @@ export class ResendMailer implements Mailer {
     if (!res.ok) {
       // Never log the body: it contains the one-time code.
       log.error('mail send failed', { status: res.status, to: msg.to });
-      throw new Error(`Mail provider error ${res.status}`);
+      throw new ApiError(503, 'mail_unavailable', "We couldn't send the email just now. Please try again in a few minutes.");
     }
   }
 }

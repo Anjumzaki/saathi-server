@@ -151,7 +151,7 @@ describe('production mail + config', () => {
     expect(calls[0]!.url).toBe('https://api.resend.com/emails');
     expect(JSON.parse(String(calls[0]!.init.body))).toMatchObject({ to: ['u@x.co'], from: 'S <a@b.co>' });
     const bad = new ResendMailer('k', 'f', (async () => ({ ok: false, status: 403 })) as never);
-    await expect(bad.send({ to: 'u@x.co', subject: 's', text: 't' })).rejects.toThrow('Mail provider error 403');
+    await expect(bad.send({ to: 'u@x.co', subject: 's', text: 't' })).rejects.toMatchObject({ status: 503, code: 'mail_unavailable' });
   });
 });
 
@@ -163,6 +163,6 @@ describe('SMTP mailer', () => {
     await ok.send({ to: 'a@b.co', subject: 's', text: 'code 123456' });
     expect(sent[0]).toMatchObject({ from: 'Saathi <u@x.co>', to: 'a@b.co' });
     const bad = new SmtpMailer({ host: 'h', port: 465, user: 'u', pass: 'p', from: 'f' }, { sendMail: async () => { throw new Error('535 auth failed'); } } as never);
-    await expect(bad.send({ to: 'a@b.co', subject: 's', text: 't' })).rejects.toThrow('Mail provider error');
+    await expect(bad.send({ to: 'a@b.co', subject: 's', text: 't' })).rejects.toMatchObject({ status: 503, code: 'mail_unavailable' });
   });
 });
