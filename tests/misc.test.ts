@@ -137,8 +137,10 @@ describe('App Store stub', () => {
 describe('production mail + config', () => {
   const base = { NODE_ENV: 'production', MONGODB_URI: 'mongodb://x/y', JWT_ACCESS_SECRET: 'a'.repeat(32), JWT_REFRESH_SECRET: 'b'.repeat(32), OTP_PEPPER: 'c'.repeat(32) };
   it('production needs a mailer (or the explicit staging flag)', () => {
-    expect(() => loadEnv(base)).toThrow(/RESEND_API_KEY/);
+    expect(() => loadEnv(base)).toThrow(/mailer/);
     expect(() => loadEnv({ ...base, RESEND_API_KEY: 're_x' })).not.toThrow();
+    expect(() => loadEnv({ ...base, SMTP_HOST: 'h', SMTP_USER: 'u', SMTP_PASS: 'p' })).not.toThrow();
+    expect(() => loadEnv({ ...base, SMTP_HOST: 'h' })).toThrow(/mailer/);
     expect(() => loadEnv({ ...base, LOG_OTP: 'true' })).not.toThrow();
   });
   it('Resend mailer posts the message and hides failures from logs', async () => {
@@ -150,5 +152,17 @@ describe('production mail + config', () => {
     expect(JSON.parse(String(calls[0]!.init.body))).toMatchObject({ to: ['u@x.co'], from: 'S <a@b.co>' });
     const bad = new ResendMailer('k', 'f', (async () => ({ ok: false, status: 403 })) as never);
     await expect(bad.send({ to: 'u@x.co', subject: 's', text: 't' })).rejects.toThrow('Mail provider error 403');
+  });
+});
+
+describe('SMTP mailer', () => {
+  it('sends from the configured sender and hides provider errors from callers', async () => {
+    const { SmtpMailer } = await import('../src/services/smtpMailer');
+    const sent: unknown[] = [];
+    const ok = new SmtpMailer({ host: 'h', port: 465, user: 'u', pass: 'p', from: 'Saathi <u@x.co>' }, { sendMail: async (m: unknown) => { sent.push(m); } } as never);
+    await ok.send({ to: 'a@b.co', subject: 's', text: 'code 123456' });
+    expect(sent[0]).toMatchObject({ from: 'Saathi <u@x.co>', to: 'a@b.co' });
+    const bad = new SmtpMailer({ host: 'h', port: 465, user: 'u', pass: 'p', from: 'f' }, { sendMail: async () => { throw new Error('535 auth failed'); } } as never);
+    await expect(bad.send({ to: 'a@b.co', subject: 's', text: 't' })).rejects.toThrow('Mail provider error');
   });
 });
