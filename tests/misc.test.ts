@@ -166,3 +166,19 @@ describe('SMTP mailer', () => {
     await expect(bad.send({ to: 'a@b.co', subject: 's', text: 't' })).rejects.toMatchObject({ status: 503, code: 'mail_unavailable' });
   });
 });
+
+describe('LOG_OTP fallback mailer', () => {
+  it('uses the real mailer, falls back to logs on failure, and rests the provider for the cooldown', async () => {
+    const { FallbackMailer } = await import('../src/services/fallbackMailer');
+    let t = 0, calls = 0, fail = true;
+    const primary = { send: async () => { calls++; if (fail) throw new Error('blocked'); } };
+    const m = new FallbackMailer(primary, 1000, () => t);
+    await expect(m.send({ to: 'a@b.co', subject: 's', text: 'x' })).resolves.toBeUndefined(); // failed -> logged, no throw
+    await m.send({ to: 'a@b.co', subject: 's', text: 'x' });
+    expect(calls).toBe(1);               // skipped during cooldown
+    t = 1500; fail = false;
+    await m.send({ to: 'a@b.co', subject: 's', text: 'x' });
+    expect(calls).toBe(2);               // retried after cooldown, now works
+    await expect(new FallbackMailer(null).send({ to: 'a@b.co', subject: 's', text: 'x' })).resolves.toBeUndefined();
+  });
+});
