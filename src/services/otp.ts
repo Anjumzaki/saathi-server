@@ -1,8 +1,8 @@
 import { getEnv } from '../config/env';
 import { Otp } from '../models/Otp';
-import { badRequest, tooMany } from '../utils/errors';
+import { ApiError, tooMany } from '../utils/errors';
 import { generateOtpCode, hashOtp, safeEqual } from '../utils/crypto';
-import { OTP_CONFIG, decideResend, evaluateOtp, type OtpState } from './otpLogic';
+import { OTP_CONFIG, OtpErrorCode, decideResend, evaluateOtp, otpFailureError, type OtpState } from './otpLogic';
 
 const toState = (d: InstanceType<typeof Otp> | null): OtpState | null =>
   d
@@ -21,7 +21,9 @@ export async function issueOtp(key: string, now = new Date()): Promise<{ code: s
   const prev = toState(await Otp.findOne({ key }));
   const decision = decideResend(prev, now);
   if (!decision.allowed) {
-    throw tooMany(decision.reason === 'locked' ? 'Too many wrong attempts. Try again later.' : 'Please wait before requesting another code.', decision.retryAfterSeconds);
+    throw decision.reason === 'locked'
+      ? tooMany('Too many wrong attempts. Try again later.', decision.retryAfterSeconds, OtpErrorCode.LOCKED)
+      : tooMany('Please wait before requesting another code.', decision.retryAfterSeconds, OtpErrorCode.COOLDOWN);
   }
   const code = generateOtpCode(OTP_CONFIG.length);
   await Otp.findOneAndUpdate(
@@ -48,8 +50,6 @@ export async function checkOtp(key: string, code: string, now = new Date()): Pro
     await doc.save();
   }
   if (ev.ok) return;
-  if (ev.failure === 'locked') throw tooMany('Too many wrong attempts. Try again later.', ev.retryAfterSeconds ?? 600);
-  if (ev.failure === 'expired') throw badRequest('Code expired. Request a new one.');
-  if (ev.failure === 'no_code') throw badRequest('No active code. Request a new one.');
-  throw badRequest('Incorrect code.', { attemptsLeft: ev.attemptsLeft });
+  const e = otpFailureError(ev);
+  throw new ApiError(e.status, e.code, e.message, e.details);
 }

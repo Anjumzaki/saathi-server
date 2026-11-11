@@ -2,25 +2,35 @@ import { Router } from 'express';
 import { z } from 'zod';
 import type { Services, VerifiedIdentity } from '../interfaces';
 import { requireAuth } from '../middleware/auth';
+import { RefreshToken } from '../models/RefreshToken';
 import { User } from '../models/User';
 import { checkOtp, issueOtp } from '../services/otp';
 import { issueTokenPair, revokeRefreshToken, rotateRefreshToken } from '../services/tokens';
 import { ensureAdminRole, serializeUser } from '../services/users';
-import { forbidden, unauthorized } from '../utils/errors';
+import { emailField as email, displayNameField, passwordField as password, phoneE164 as phone, termsVersionField } from '../schemas/common';
+import { hashPassword, verifyPassword } from '../utils/password';
+import { LOGIN_LOCK, afterFailure, afterSuccess, lockSecondsLeft } from '../services/loginLock';
+import { fieldsForNewUser } from '../services/signupProfile';
+import { ApiError, conflict, tooMany, unauthorized } from '../utils/errors';
 import { asyncHandler, authOf, parse } from '../utils/http';
 
-const email = z.string().trim().toLowerCase().email().max(254);
 const code = z.string().regex(/^\d{6}$/, 'code must be 6 digits');
-const phone = z.string().regex(/^\+[1-9]\d{7,14}$/, 'phone must be E.164, e.g. +923001234567');
+/** Optional sign-up form data. Applied ONLY when this request creates the account, never to an existing one. */
+const signup = z.object({
+  displayName: displayNameField.optional(),
+  phone: phone.optional(),
+  acceptTerms: z.literal(true).optional(),
+  termsVersion: termsVersionField.optional(),
+}).strict();
 
 export function authRoutes(s: Services): Router {
   const r = Router();
 
-  async function finishSignIn(u: InstanceType<typeof User>) {
-    if (u.deletedAt) throw forbidden('Account deleted');
+  async function finishSignIn(u: InstanceType<typeof User>, isNewUser = false) {
+    if (u.deletedAt) throw new ApiError(403, 'account_deleted', 'This account was deleted.');
     await ensureAdminRole(u);
     const tokens = await issueTokenPair(u._id, u.roles);
-    return { user: serializeUser(u), tokens };
+    return { user: serializeUser(u), tokens, isNewUser };
   }
 
   async function signInWithIdentity(id: VerifiedIdentity) {
@@ -33,8 +43,9 @@ export function authRoutes(s: Services): Router {
         await u.save();
       }
     }
+    const isNew = !u;
     if (!u) u = await User.create({ [subField]: id.subject, email: id.emailVerified ? id.email : undefined, displayName: id.name });
-    return finishSignIn(u);
+    return finishSignIn(u, isNew);
   }
 
   // ----- email OTP -----
@@ -50,11 +61,99 @@ export function authRoutes(s: Services): Router {
   }));
 
   r.post('/otp/verify', asyncHandler(async (req, res) => {
-    const { email: addr, code: c } = parse(z.object({ email, code }), req.body);
+    const { email: addr, code: c, signup: form } = parse(z.object({ email, code, signup: signup.optional() }), req.body);
     await checkOtp(`email:${addr}`, c);
     let u = await User.findOne({ email: addr });
-    u ??= await User.create({ email: addr });
-    res.json(await finishSignIn(u));
+    const isNew = !u;
+    u ??= await User.create({ email: addr, ...fieldsForNewUser(form, new Date()) });
+    res.json(await finishSignIn(u, isNew));
+  }));
+
+  // ----- email + password -----
+  r.post('/signup', asyncHandler(async (req, res) => {
+    const { email: addr, password: pw, signup: form } = parse(z.object({ email, password, signup: signup.optional() }), req.body);
+    if (await User.exists({ email: addr })) throw conflict('An account with this email already exists. Sign in instead.', 'email_in_use');
+    const u = await User.create({ email: addr, passwordHash: await hashPassword(pw), ...fieldsForNewUser(form, new Date()) });
+    res.json(await finishSignIn(u, true));
+  }));
+
+  r.post('/login', asyncHandler(async (req, res) => {
+    const { email: addr, password: pw } = parse(z.object({ email, password: z.string().min(1).max(128) }), req.body);
+    const u = await User.findOne({ email: addr }).select('+passwordHash');
+    const now = new Date();
+    if (!u) {
+      await verifyPassword(pw, 'scrypt$x$x'); // keep the timing similar
+      throw new ApiError(401, 'invalid_credentials', 'Email or password is not right.');
+    }
+    const left = lockSecondsLeft({ failedLogins: u.failedLogins, loginLockedUntil: u.loginLockedUntil ?? null }, now);
+    if (left > 0) throw tooMany('Too many wrong passwords. Try again later.', left, 'login_locked');
+    if (!u.passwordHash) throw new ApiError(401, 'password_not_set', 'This account has no password yet. Use Forgot password to set one.');
+    if (!(await verifyPassword(pw, u.passwordHash))) {
+      const next = afterFailure({ failedLogins: u.failedLogins, loginLockedUntil: null }, now);
+      u.failedLogins = next.failedLogins;
+      u.loginLockedUntil = next.loginLockedUntil;
+      await u.save();
+      if (next.loginLockedUntil) throw tooMany('Too many wrong passwords. Try again later.', LOGIN_LOCK.lockMs / 1000, 'login_locked');
+      throw new ApiError(401, 'invalid_credentials', 'Email or password is not right.');
+    }
+    const ok = afterSuccess();
+    u.failedLogins = ok.failedLogins;
+    u.loginLockedUntil = ok.loginLockedUntil;
+    await u.save();
+    res.json(await finishSignIn(u, false));
+  }));
+
+  // Forgot password: the same emailed 6-digit code, now only used to set a new password.
+  r.post('/password/forgot', asyncHandler(async (req, res) => {
+    const { email: addr } = parse(z.object({ email }), req.body);
+    const u = await User.findOne({ email: addr }).select('deletedAt');
+    if (!u || u.deletedAt) { res.json({ ok: true, resendAfterSeconds: 60 }); return; } // never reveal whether an email has an account
+    const { code: c, resendAfterSeconds } = await issueOtp(`reset:${addr}`);
+    await s.mailer.send({
+      to: addr,
+      subject: 'Reset your Saathi password',
+      text: `Your Saathi password reset code is ${c}. It expires in 10 minutes. If you did not ask for it, ignore this email.`,
+    });
+    res.json({ ok: true, resendAfterSeconds });
+  }));
+
+  r.post('/password/reset', asyncHandler(async (req, res) => {
+    const { email: addr, code: c, password: pw } = parse(z.object({ email, code, password }), req.body);
+    await checkOtp(`reset:${addr}`, c);
+    const u = await User.findOne({ email: addr });
+    if (!u) throw new ApiError(400, 'otp_no_code', 'That code is no longer active.');
+    u.passwordHash = await hashPassword(pw);
+    u.failedLogins = 0;
+    u.loginLockedUntil = null;
+    await u.save();
+    res.json(await finishSignIn(u, false));
+  }));
+
+  // Change password while signed in: needs the current one. Other devices are signed out; this one gets fresh tokens.
+  r.post('/password/change', requireAuth, asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = parse(z.object({ currentPassword: z.string().min(1).max(128), newPassword: password }), req.body);
+    const { userId } = authOf(req);
+    const u = await User.findById(userId).select('+passwordHash');
+    if (!u || u.deletedAt) throw unauthorized();
+    const now = new Date();
+    const left = lockSecondsLeft({ failedLogins: u.failedLogins, loginLockedUntil: u.loginLockedUntil ?? null }, now);
+    if (left > 0) throw tooMany('Too many wrong passwords. Try again later.', left, 'login_locked');
+    if (!u.passwordHash) throw new ApiError(400, 'password_not_set', 'This account has no password yet. Sign out and use Forgot password to set one.');
+    if (!(await verifyPassword(currentPassword, u.passwordHash))) {
+      const next = afterFailure({ failedLogins: u.failedLogins, loginLockedUntil: null }, now);
+      u.failedLogins = next.failedLogins;
+      u.loginLockedUntil = next.loginLockedUntil;
+      await u.save();
+      if (next.loginLockedUntil) throw tooMany('Too many wrong passwords. Try again later.', LOGIN_LOCK.lockMs / 1000, 'login_locked');
+      throw new ApiError(400, 'wrong_password', 'Your current password is not right.');
+    }
+    if (await verifyPassword(newPassword, u.passwordHash)) throw new ApiError(400, 'same_password', 'Choose a password different from the current one.');
+    u.passwordHash = await hashPassword(newPassword);
+    u.failedLogins = 0;
+    u.loginLockedUntil = null;
+    await u.save();
+    await RefreshToken.updateMany({ userId: u._id, revokedAt: null }, { revokedAt: new Date() });
+    res.json({ tokens: await issueTokenPair(u._id, u.roles) });
   }));
 
   // ----- social sign-in -----

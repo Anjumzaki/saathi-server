@@ -1,5 +1,5 @@
 /**
- * Structural plan check. PURE functions only: no calorie counting, no nutrition database.
+ * Structural plan check. PURE functions only: no calorie logging, no nutrition database.
  * Everything is derived from the plan-as-data (times, categories, keywords).
  */
 import { formatHHMM, parseHHMM } from '../utils/time';

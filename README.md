@@ -60,12 +60,14 @@ tests/                     vitest: pure logic + HTTP wiring that needs no databa
 Public: `GET /health` (also `/v1/health`), `GET /region/:country`, `GET /packages`, `GET /dietitians`, `GET /dietitians/:id`.
 
 **Auth** (`/auth`, rate limited, 30 req / 15 min / IP)
-- `POST /auth/otp/request {email}` and `POST /auth/otp/verify {email, code}`: 6 digits, 10 min expiry, 5 wrong tries then a 10 min lock, 60 s resend cooldown. Failed-attempt counters carry over resends. Only a peppered HMAC of the code is stored.
+- `POST /auth/otp/request {email}` and `POST /auth/otp/verify {email, code, signup?}`: 6 digits, 10 min expiry, 5 wrong tries then a 10 min lock, 60 s resend cooldown. Failed-attempt counters carry over resends. Only a peppered HMAC of the code is stored.
+  - Verify returns `{user, tokens, isNewUser}`. `signup {displayName?, phone?, acceptTerms?, termsVersion?}` is applied only when the request creates the account; an existing account is never changed by it. `user.needsProfile` is true until the account has a name and accepted terms.
+  - Error codes the apps switch on: `otp_incorrect` (400, `details.attemptsLeft`), `otp_expired` (400), `otp_no_code` (400), `otp_locked` (429, `details.retryAfterSeconds`), `otp_cooldown` (429, `details.retryAfterSeconds`), `account_deleted` (403). The per-IP limiter keeps `too_many_requests`.
 - `POST /auth/google {idToken}`, `POST /auth/apple {idToken}`
 - `POST /auth/refresh {refreshToken}` (rotation; re-use of a rotated token revokes the whole family), `POST /auth/logout {refreshToken}`
 - `POST /auth/phone/request {phone}` and `POST /auth/phone/verify {phone, code}` (auth required, E.164, lazy: only call it when a feature needs a verified phone)
 
-**Account**: `GET /me`, `PATCH /me {displayName,country,timezone}`, `GET /me/export`, `DELETE /me` (blocked with 409 while an order is paid/in progress/delivered; financial order rows are retained).
+**Account**: `GET /me`, `PATCH /me {displayName,country,timezone,phone,acceptTerms,termsVersion}` (phone is E.164 or null; a changed number becomes unverified; `acceptTerms: true` records the consent time and version), `GET /me/export`, `DELETE /me` (blocked with 409 while an order is paid/in progress/delivered; financial order rows are retained).
 
 **Sync**: `POST /sync/push`, `GET /sync/pull?since=ISO&collections=a,b`
 - Collections: `planItems, logs, metrics, sleepLogs, stepDays, cycleRecords, settings, answers`. `answers` (onboarding/settings answers: `clientId` = dataset key, payload `{optionIds, datasetVersion}`) is private: never shown to dietitians or partners.

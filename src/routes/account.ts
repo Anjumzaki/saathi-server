@@ -10,6 +10,8 @@ import { Plan } from '../models/Plan';
 import { RefreshToken } from '../models/RefreshToken';
 import { SyncRecord } from '../models/SyncRecord';
 import { User } from '../models/User';
+import { displayNameField, phoneE164, termsVersionField } from '../schemas/common';
+import { CURRENT_TERMS_VERSION } from '../services/signupProfile';
 import { serializeUser } from '../services/users';
 import { conflict, notFound } from '../utils/errors';
 import { asyncHandler, authOf, parse } from '../utils/http';
@@ -26,14 +28,29 @@ export function accountRoutes(): Router {
   r.patch('/', asyncHandler(async (req, res) => {
     const body = parse(
       z.object({
-        displayName: z.string().trim().min(1).max(100).optional(),
+        displayName: displayNameField.optional(),
         country: z.string().length(2).toUpperCase().optional(),
         timezone: z.string().max(64).optional(),
+        /** E.164, or null to remove it. A changed number is unverified until /auth/phone/verify. */
+        phone: phoneE164.nullable().optional(),
+        acceptTerms: z.literal(true).optional(),
+        termsVersion: termsVersionField.optional(),
       }).strict(),
       req.body,
     );
-    const u = await User.findByIdAndUpdate(authOf(req).userId, { $set: body }, { new: true });
-    if (!u) throw notFound();
+    const u = await User.findById(authOf(req).userId);
+    if (!u || u.deletedAt) throw notFound();
+    const { phone, acceptTerms, termsVersion, ...rest } = body;
+    u.set(rest);
+    if (phone !== undefined && (phone ?? undefined) !== (u.phone ?? undefined)) {
+      u.phone = phone ?? undefined;
+      u.phoneVerified = false;
+    }
+    if (acceptTerms) {
+      u.termsAcceptedAt = new Date();
+      u.termsVersion = termsVersion ?? CURRENT_TERMS_VERSION;
+    }
+    await u.save();
     res.json({ user: serializeUser(u) });
   }));
 
@@ -68,6 +85,16 @@ export function accountRoutes(): Router {
   }));
 
   /**
+   * "Sign out & reset data": erases what the app synced (plan, logs, settings, cycle and so on) and the saved plan versions,
+   * but keeps the account, orders, partner shares and subscription. Signing in again starts from an empty account.
+   */
+  r.delete('/data', asyncHandler(async (req, res) => {
+    const { userId } = authOf(req);
+    await Promise.all([SyncRecord.deleteMany({ userId }), Plan.deleteMany({ userId })]);
+    res.status(204).end();
+  }));
+
+  /**
    * Account deletion. Orders are financial records and are retained (their parties are anonymised via the user row).
    * Blocked while an order is still in flight so nobody is left unpaid / unserved.
    */
@@ -90,6 +117,7 @@ export function accountRoutes(): Router {
     const u = await User.findById(userId);
     if (u) {
       await Otp.deleteOne({ key: `email:${u.email}` });
+      await Otp.deleteOne({ key: `reset:${u.email}` });
       await User.collection.updateOne(
         { _id: u._id },
         {

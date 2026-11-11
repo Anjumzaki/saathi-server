@@ -46,6 +46,18 @@ describe('HTTP wiring', () => {
     expect(r.status).toBe(400);
     expect((await j(r)).error.code).toBe('validation_error');
     expect((await post('/v1/auth/otp/verify', { email: 'a@b.co', code: '12' })).status).toBe(400);
+    // password sign-in input is validated before anything touches the database
+    expect((await post('/v1/auth/signup', { email: 'a@b.co', password: 'short' })).status).toBe(400);
+    expect((await post('/v1/auth/signup', { email: 'a@b.co' })).status).toBe(400);
+    expect((await post('/v1/auth/login', { email: 'a@b.co' })).status).toBe(400);
+    expect((await post('/v1/auth/password/change', { currentPassword: 'x', newPassword: 'longenough1' })).status).toBe(401); // needs a session
+    expect((await post('/v1/auth/password/reset', { email: 'a@b.co', code: '123456', password: 'short' })).status).toBe(400);
+    // sign-up form data is validated before anything else happens
+    for (const signup of [{ phone: '03001234567' }, { displayName: '' }, { acceptTerms: false }, { role: 'admin' }]) {
+      const bad = await post('/v1/auth/otp/verify', { email: 'a@b.co', code: '123456', signup });
+      expect(bad.status).toBe(400);
+      expect((await j(bad)).error.code).toBe('validation_error');
+    }
   });
   it('rejects malformed JSON cleanly', async () => {
     const r = await fetch(base + '/v1/auth/otp/request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{bad' });

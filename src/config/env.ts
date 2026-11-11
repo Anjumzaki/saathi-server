@@ -18,7 +18,7 @@ const schema = z.object({
   JWT_REFRESH_SECRET: z.string().default('dev-refresh-secret-not-for-production-use'),
   OTP_PEPPER: z.string().default('dev-otp-pepper-not-for-production-use'),
   ACCESS_TOKEN_TTL_MIN: z.coerce.number().int().positive().default(15),
-  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(365),
   ADMIN_EMAILS: csv,
   CORS_ORIGINS: csv,
   APP_LINK_BASE: z.string().default('https://saathi.example'),

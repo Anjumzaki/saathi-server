@@ -90,3 +90,24 @@ export function evaluateOtp(
   }
   return { ok: false, failure: 'invalid', attemptsLeft: cfg.maxAttempts - attempts, patch: { attempts, lockedUntil: null } };
 }
+
+/** Stable error codes the apps switch on. Never reuse a code for a different meaning. */
+export const OtpErrorCode = {
+  INCORRECT: 'otp_incorrect', EXPIRED: 'otp_expired', NO_CODE: 'otp_no_code', LOCKED: 'otp_locked', COOLDOWN: 'otp_cooldown',
+} as const;
+
+export interface OtpErrorShape { status: number; code: string; message: string; details?: { attemptsLeft?: number; retryAfterSeconds?: number } }
+
+/** Maps a failed evaluation to the HTTP error the client sees. */
+export function otpFailureError(ev: OtpEvaluation, cfg = OTP_CONFIG): OtpErrorShape {
+  switch (ev.failure) {
+    case 'locked':
+      return { status: 429, code: OtpErrorCode.LOCKED, message: 'Too many wrong attempts. Try again later.', details: { retryAfterSeconds: ev.retryAfterSeconds ?? cfg.lockMs / 1000, attemptsLeft: 0 } };
+    case 'expired':
+      return { status: 400, code: OtpErrorCode.EXPIRED, message: 'Code expired. Request a new one.' };
+    case 'no_code':
+      return { status: 400, code: OtpErrorCode.NO_CODE, message: 'No active code. Request a new one.' };
+    default:
+      return { status: 400, code: OtpErrorCode.INCORRECT, message: 'Incorrect code.', details: { attemptsLeft: ev.attemptsLeft } };
+  }
+}

@@ -1,6 +1,7 @@
 import { getEnv } from '../config/env';
 import { User } from '../models/User';
 import { effectiveStatus, isPremiumActive } from './entitlement';
+import { needsProfile } from './signupProfile';
 
 type UserDoc = InstanceType<typeof User>;
 
@@ -15,6 +16,9 @@ export function serializeUser(u: UserDoc, now = new Date()) {
     roles: u.roles,
     phone: u.phone ?? null,
     phoneVerified: u.phoneVerified,
+    termsAcceptedAt: u.termsAcceptedAt ?? null,
+    termsVersion: u.termsVersion ?? null,
+    needsProfile: needsProfile(u),
     subscription: {
       status: effectiveStatus(sub as never, now),
       plan: sub?.plan ?? null,

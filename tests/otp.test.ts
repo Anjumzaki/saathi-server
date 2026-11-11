@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { OTP_CONFIG, decideResend, evaluateOtp, type OtpState } from '../src/services/otpLogic';
+import { OTP_CONFIG, decideResend, evaluateOtp, otpFailureError, type OtpState } from '../src/services/otpLogic';
+import { CURRENT_TERMS_VERSION, fieldsForNewUser, needsProfile } from '../src/services/signupProfile';
 import { generateOtpCode, hashOtp, safeEqual } from '../src/utils/crypto';
 
 const t0 = new Date('2026-01-01T10:00:00Z');
@@ -85,5 +86,36 @@ describe('otp crypto', () => {
     expect(h).not.toBe(hashOtp('other', 'email:a@b.c', '123456'));
     expect(safeEqual(h, hashOtp('pep', 'email:a@b.c', '123456'))).toBe(true);
     expect(safeEqual(h, 'short')).toBe(false);
+  });
+});
+
+describe('otpFailureError (codes the apps switch on)', () => {
+  it('gives each failure its own code', () => {
+    expect(otpFailureError({ ok: false, failure: 'invalid', attemptsLeft: 3, patch: {} })).toMatchObject({ status: 400, code: 'otp_incorrect', details: { attemptsLeft: 3 } });
+    expect(otpFailureError({ ok: false, failure: 'expired', patch: {} })).toMatchObject({ status: 400, code: 'otp_expired' });
+    expect(otpFailureError({ ok: false, failure: 'no_code', patch: {} })).toMatchObject({ status: 400, code: 'otp_no_code' });
+    expect(otpFailureError({ ok: false, failure: 'locked', retryAfterSeconds: 42, patch: {} })).toMatchObject({ status: 429, code: 'otp_locked', details: { retryAfterSeconds: 42 } });
+  });
+  it('falls back to the full lock time', () => {
+    expect(otpFailureError({ ok: false, failure: 'locked', patch: {} }).details?.retryAfterSeconds).toBe(600);
+  });
+});
+
+describe('sign-up profile', () => {
+  const now = new Date('2026-11-10T00:00:00Z');
+  it('takes name, phone and consent for a new account', () => {
+    expect(fieldsForNewUser({ displayName: 'Ayesha', phone: '+923001234567', acceptTerms: true }, now)).toEqual({
+      displayName: 'Ayesha', phone: '+923001234567', phoneVerified: false, termsAcceptedAt: now, termsVersion: CURRENT_TERMS_VERSION,
+    });
+  });
+  it('sets nothing without a form, and no consent unless accepted', () => {
+    expect(fieldsForNewUser(undefined, now)).toEqual({});
+    expect(fieldsForNewUser({ displayName: 'A' }, now)).toEqual({ displayName: 'A' });
+  });
+  it('needs a profile until there is a name and consent', () => {
+    expect(needsProfile({})).toBe(true);
+    expect(needsProfile({ displayName: 'A' })).toBe(true);
+    expect(needsProfile({ displayName: '  ', termsAcceptedAt: now })).toBe(true);
+    expect(needsProfile({ displayName: 'A', termsAcceptedAt: now })).toBe(false);
   });
 });
