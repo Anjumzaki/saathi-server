@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { getEnv } from '../config/env';
+import { DaySummary } from '../models/DaySummary';
 import { Cheer, PartnerShare } from '../models/PartnerShare';
 import { SyncRecord } from '../models/SyncRecord';
 import { User } from '../models/User';
@@ -18,7 +19,24 @@ const permsSchema = z.object({
   waterWalk: z.boolean().default(false),
   weight: z.boolean().default(false),
   togetherNudgesOnly: z.boolean().default(false),
+  together: z.boolean().default(false),
 });
+
+/** What the phone sends for one day. Numbers and flags only: no food names, no cycle dates. */
+const summarySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  effort: z.number().int().min(0).max(100),
+  streak: z.number().int().min(0).max(10000),
+  mealsDone: z.number().int().min(0).max(50),
+  mealsTotal: z.number().int().min(0).max(50),
+  waterCups: z.number().int().min(0).max(100),
+  waterTarget: z.number().int().min(0).max(100),
+  steps: z.number().int().min(0).max(200000),
+  walkDone: z.boolean(),
+  togetherTonight: z.boolean().default(false),
+  weightKg: z.number().min(2).max(400).nullable().default(null),
+  weightGoalKg: z.number().min(2).max(400).nullable().default(null),
+}).strict();
 
 /**
  * Snapshot conventions (documented in README): the phone syncs
@@ -51,6 +69,26 @@ async function buildSnapshot(ownerId: string, date: string): Promise<PartnerSnap
     }
   }
   if (!sawWater) snap.waterMl = null;
+  // The app's own day summary (PUT /partner/summary) is the real source; the record conventions above are a fallback.
+  const day = (await DaySummary.findOne({ userId: ownerId, date }).lean()) ?? (await DaySummary.findOne({ userId: ownerId, updatedAt: { $gte: new Date(Date.now() - 36 * 3_600_000) } }).sort({ date: -1 }).lean());
+  if (day) {
+    const d = day.summary as Record<string, unknown>;
+    const num = (k: string) => (typeof d[k] === 'number' ? (d[k] as number) : null);
+    snap.date = day.date;
+    snap.effort = num('effort');
+    snap.effortRing = snap.effort != null ? snap.effort / 100 : snap.effortRing ?? null;
+    snap.streak = num('streak');
+    snap.mealsDone = num('mealsDone');
+    snap.mealsTotal = num('mealsTotal');
+    snap.mealsLoggedToday = (snap.mealsDone ?? 0) > 0;
+    snap.waterCups = num('waterCups');
+    snap.waterTarget = num('waterTarget');
+    snap.steps = num('steps');
+    snap.walkDone = d['walkDone'] === true;
+    snap.togetherTonight = d['togetherTonight'] === true;
+    snap.weightKg = num('weightKg');
+    snap.weightGoalKg = num('weightGoalKg');
+  }
   return snap;
 }
 
@@ -61,6 +99,14 @@ const ownerView = (s: InstanceType<typeof PartnerShare>) => ({
 
 export function partnerRoutes(): Router {
   const r = Router();
+
+  // Owner: the phone's summary of one day, replacing any earlier one for that date.
+  r.put('/summary', asyncHandler(async (req, res) => {
+    const { userId } = authOf(req);
+    const { date, ...summary } = parse(summarySchema, req.body);
+    await DaySummary.updateOne({ userId, date }, { $set: { summary } }, { upsert: true });
+    res.status(204).end();
+  }));
 
   r.post('/invites', asyncHandler(async (req, res) => {
     const { userId } = authOf(req);
@@ -93,7 +139,8 @@ export function partnerRoutes(): Router {
 
   r.get('/shares', asyncHandler(async (req, res) => {
     const shares = await PartnerShare.find({ ownerId: authOf(req).userId, status: { $ne: 'revoked' } }).lean();
-    res.json({ shares: shares.map((s) => ({ id: String(s._id), status: s.status, partnerId: s.partnerId ? String(s.partnerId) : null, permissions: s.permissions, inviteExpiresAt: s.inviteExpiresAt ?? null, lastCheerAt: s.lastCheerAt ?? null })) });
+    const partners = await User.find({ _id: { $in: shares.map((s) => s.partnerId).filter(Boolean) } }).select('displayName').lean();
+    res.json({ shares: shares.map((s) => ({ id: String(s._id), status: s.status, partnerId: s.partnerId ? String(s.partnerId) : null, partnerName: partners.find((p) => String(p._id) === String(s.partnerId))?.displayName ?? null, permissions: s.permissions, inviteExpiresAt: s.inviteExpiresAt ?? null, lastCheerAt: s.lastCheerAt ?? null })) });
   }));
 
   r.patch('/shares/:id', asyncHandler(async (req, res) => {

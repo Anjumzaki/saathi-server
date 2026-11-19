@@ -10,6 +10,8 @@ export interface PartnerPermissions {
   weight: boolean;
   /** When true the partner receives ONLY shared "together" nudges, never any stats. */
   togetherNudgesOnly: boolean;
+  /** Additive: lets the partner see that tonight is a Together evening. Never dates, phases or symptoms. */
+  together?: boolean;
 }
 
 export const inviteExpiry = (now: Date): Date => new Date(now.getTime() + INVITE_TTL_MS);

@@ -15,6 +15,7 @@ const shareSchema = new Schema(
           waterWalk: { type: Boolean, default: false },
           weight: { type: Boolean, default: false },
           togetherNudgesOnly: { type: Boolean, default: false },
+          together: { type: Boolean, default: false },
         },
         { _id: false },
       ),

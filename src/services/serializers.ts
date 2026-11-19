@@ -62,6 +62,15 @@ export interface PartnerSnapshot {
   steps?: number | null;
   weightKg?: number | null;
   togetherNudges?: string[];
+  // From the phone's day summary (DaySummary). Counts only, never what was eaten.
+  effort?: number | null;
+  mealsDone?: number | null;
+  mealsTotal?: number | null;
+  waterCups?: number | null;
+  waterTarget?: number | null;
+  walkDone?: boolean | null;
+  weightGoalKg?: number | null;
+  togetherTonight?: boolean | null;
 }
 
 export interface PartnerView {
@@ -73,6 +82,12 @@ export interface PartnerView {
   walk?: { steps: number | null };
   weightKg?: number | null;
   togetherNudges?: string[];
+  effort?: number | null;
+  meals?: { done: number; total: number };
+  waterCups?: { done: number; target: number | null };
+  walkDone?: boolean;
+  weightGoalKg?: number | null;
+  togetherTonight?: boolean;
 }
 
 /** Builds exactly what the owner ticked. The snapshot type has no cycle fields; extra props are ignored. */
@@ -85,12 +100,22 @@ export function serializePartnerView(perms: PartnerPermissions, snap: PartnerSna
   if (perms.effortRing) {
     view.effortRing = snap.effortRing ?? null;
     view.streak = snap.streak ?? null;
+    if (snap.effort != null) view.effort = snap.effort;
   }
-  if (perms.mealsLogged) view.mealsLoggedToday = !!snap.mealsLoggedToday;
+  if (perms.mealsLogged) {
+    view.mealsLoggedToday = !!snap.mealsLoggedToday;
+    if (snap.mealsDone != null && snap.mealsTotal != null) view.meals = { done: snap.mealsDone, total: snap.mealsTotal };
+  }
   if (perms.waterWalk) {
     view.water = { ml: snap.waterMl ?? null };
     view.walk = { steps: snap.steps ?? null };
+    if (snap.waterCups != null) view.waterCups = { done: snap.waterCups, target: snap.waterTarget ?? null };
+    if (snap.walkDone != null) view.walkDone = snap.walkDone;
   }
-  if (perms.weight) view.weightKg = snap.weightKg ?? null;
+  if (perms.weight) {
+    view.weightKg = snap.weightKg ?? null;
+    if (snap.weightGoalKg != null) view.weightGoalKg = snap.weightGoalKg;
+  }
+  if (perms.together && snap.togetherTonight) view.togetherTonight = true;
   return view;
 }

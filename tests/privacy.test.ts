@@ -14,6 +14,18 @@ const snap = {
 const FORBIDDEN = /cycle|period|symptom|cramp|flow|menstru/i;
 
 describe('partner view', () => {
+  it('day-summary fields follow the same ticks: counts only, Together only when ticked and true', () => {
+    const day = { ...snap, effort: 78, mealsDone: 4, mealsTotal: 5, waterCups: 6, waterTarget: 8, walkDone: true, weightGoalKg: 58, togetherTonight: true } as PartnerSnapshot;
+    expect(serializePartnerView(perms(), day)).toEqual({ date: '2026-03-01' });
+    expect(serializePartnerView(perms({ effortRing: true }), day)).toMatchObject({ effort: 78, streak: 5 });
+    expect(serializePartnerView(perms({ mealsLogged: true }), day)).toMatchObject({ meals: { done: 4, total: 5 } });
+    expect(serializePartnerView(perms({ waterWalk: true }), day)).toMatchObject({ waterCups: { done: 6, target: 8 }, walkDone: true });
+    expect(serializePartnerView(perms({ weight: true }), day)).toMatchObject({ weightKg: 60.5, weightGoalKg: 58 });
+    expect(serializePartnerView(perms({ effortRing: true }), day).togetherTonight).toBeUndefined();
+    expect(serializePartnerView(perms({ together: true }), day)).toEqual({ date: '2026-03-01', togetherTonight: true });
+    expect(JSON.stringify(serializePartnerView(perms({ effortRing: true, mealsLogged: true, waterWalk: true, weight: true, together: true }), day))).not.toMatch(FORBIDDEN);
+  });
+
   it('shows nothing but the date when no permission is ticked', () => {
     expect(serializePartnerView(perms(), snap)).toEqual({ date: '2026-03-01' });
   });
