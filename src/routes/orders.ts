@@ -78,7 +78,27 @@ export function orderRoutes(s: Services): Router {
   r.get('/', asyncHandler(async (req, res) => {
     const { userId } = authOf(req);
     const orders = await Order.find({ $or: [{ clientId: userId }, { dietitianId: userId }] }).select('-purchaseToken').sort({ createdAt: -1 }).limit(100).lean();
-    res.json({ orders });
+    // Names for the history screens: the package label, the dietitian's name and every call booked on the order.
+    const [pkgs, profiles, calls] = await Promise.all([
+      PackageConfig.find({ key: { $in: [...new Set(orders.map((o) => o.packageKey))] } }).select('key label').lean(),
+      DietitianProfile.find({ userId: { $in: [...new Set(orders.map((o) => String(o.dietitianId)))] } }).select('userId displayName').lean(),
+      CallBooking.find({ orderId: { $in: orders.map((o) => o._id) } }).sort({ slotStart: 1 }).lean(),
+    ]);
+    const label = new Map(pkgs.map((p) => [p.key, p.label]));
+    const names = new Map(profiles.map((p) => [String(p.userId), p.displayName]));
+    res.json({
+      orders: orders.map((o) => {
+        const mine = String(o.clientId) === userId;
+        const { settlement, ...rest } = o as typeof o & { settlement?: unknown };
+        return {
+          ...(mine ? rest : o), // the fee breakdown is for the dietitian side only
+          packageLabel: label.get(o.packageKey) ?? o.packageKey,
+          dietitianName: names.get(String(o.dietitianId)) ?? null,
+          calls: calls.filter((c) => String(c.orderId) === String(o._id)),
+          ...(mine ? {} : { settlement }),
+        };
+      }),
+    });
   }));
 
   r.get('/:id', asyncHandler(async (req, res) => {

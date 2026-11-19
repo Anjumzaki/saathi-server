@@ -3,6 +3,7 @@ import type {
   AiPlanReader,
   IdTokenVerifier,
   Mailer,
+  MailMessage,
   AppStoreBilling,
   PlayBilling,
   Services,
@@ -20,7 +21,7 @@ const isProd = () => process.env.NODE_ENV === 'production';
  * LOG_OTP=true, which exists ONLY for a private staging server before a real mail provider is set up.
  */
 export class ConsoleMailer implements Mailer {
-  async send(msg: { to: string; subject: string; text: string }): Promise<void> {
+  async send(msg: MailMessage): Promise<void> {
     if (isProd() && process.env.LOG_OTP !== 'true') log.info('mail (console mailer, body suppressed)', { to: msg.to, subject: msg.subject });
     else process.stdout.write(`\n--- MAIL to ${msg.to} ---\n${msg.subject}\n${msg.text}\n---\n`);
   }

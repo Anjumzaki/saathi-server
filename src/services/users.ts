@@ -16,6 +16,7 @@ export function serializeUser(u: UserDoc, now = new Date()) {
     roles: u.roles,
     phone: u.phone ?? null,
     phoneVerified: u.phoneVerified,
+    emailVerified: !!u.emailVerifiedAt,
     termsAcceptedAt: u.termsAcceptedAt ?? null,
     termsVersion: u.termsVersion ?? null,
     needsProfile: needsProfile(u),

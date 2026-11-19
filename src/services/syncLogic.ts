@@ -13,6 +13,7 @@ export const SYNC_COLLECTIONS = [
   'rules',
   'recipes',
   'feelings',
+  'reflections',
 ] as const;
 export type SyncCollection = (typeof SYNC_COLLECTIONS)[number];
 

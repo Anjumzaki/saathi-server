@@ -27,6 +27,8 @@ export function createApp(services: Services): Express {
   app.set('trust proxy', 1); // Heroku / AWS load balancer: correct client IP for rate limiting
   app.use(helmet());
   if (env.CORS_ORIGINS.length) app.use(cors({ origin: env.CORS_ORIGINS }));
+  // Plan documents (PDF / photo as base64) are the only large request.
+  app.use('/v1/plans/import-ai', express.json({ limit: '12mb' }));
   app.use(express.json({ limit: '1mb' }));
 
   // request log: method, path, status, duration only (never bodies, headers or query strings)

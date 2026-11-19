@@ -1,4 +1,4 @@
-import type { Mailer } from '../interfaces';
+import type { Mailer, MailMessage } from '../interfaces';
 import { log } from '../utils/logger';
 
 /**
@@ -10,7 +10,7 @@ export class FallbackMailer implements Mailer {
   private skipUntil = 0;
   constructor(private readonly primary: Mailer | null, private readonly cooldownMs = 15 * 60_000, private readonly now: () => number = Date.now) {}
 
-  async send(msg: { to: string; subject: string; text: string }): Promise<void> {
+  async send(msg: MailMessage): Promise<void> {
     if (this.primary && this.now() >= this.skipUntil) {
       try {
         await this.primary.send(msg);

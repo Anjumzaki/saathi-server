@@ -5,6 +5,8 @@ import { requireAuth } from '../middleware/auth';
 import { RefreshToken } from '../models/RefreshToken';
 import { User } from '../models/User';
 import { checkOtp, issueOtp } from '../services/otp';
+import { OTP_CONFIG } from '../services/otpLogic';
+import { codeEmail, type CodePurpose } from '../services/emailTemplates';
 import { issueTokenPair, revokeRefreshToken, rotateRefreshToken } from '../services/tokens';
 import { ensureAdminRole, serializeUser } from '../services/users';
 import { emailField as email, displayNameField, passwordField as password, phoneE164 as phone, termsVersionField } from '../schemas/common';
@@ -15,6 +17,8 @@ import { ApiError, conflict, tooMany, unauthorized } from '../utils/errors';
 import { asyncHandler, authOf, parse } from '../utils/http';
 
 const code = z.string().regex(/^\d{6}$/, 'code must be 6 digits');
+/** Taken from the OTP config so the email can never promise an expiry the server does not honour. */
+const OTP_MINUTES = Math.round(OTP_CONFIG.ttlMs / 60_000);
 /** Optional sign-up form data. Applied ONLY when this request creates the account, never to an existing one. */
 const signup = z.object({
   displayName: displayNameField.optional(),
@@ -25,6 +29,15 @@ const signup = z.object({
 
 export function authRoutes(s: Services): Router {
   const r = Router();
+
+  const sendCode = (to: string, purpose: CodePurpose, c: string) => s.mailer.send({ to, ...codeEmail(purpose, c, OTP_MINUTES) });
+
+  /** Entering an emailed code proves control of the mailbox, so it is what marks the address verified. */
+  async function markEmailVerified(u: InstanceType<typeof User>): Promise<void> {
+    if (u.emailVerifiedAt) return;
+    u.emailVerifiedAt = new Date();
+    await u.save();
+  }
 
   async function finishSignIn(u: InstanceType<typeof User>, isNewUser = false) {
     if (u.deletedAt) throw new ApiError(403, 'account_deleted', 'This account was deleted.');
@@ -44,37 +57,65 @@ export function authRoutes(s: Services): Router {
       }
     }
     const isNew = !u;
-    if (!u) u = await User.create({ [subField]: id.subject, email: id.emailVerified ? id.email : undefined, displayName: id.name });
+    if (!u) {
+      u = await User.create({
+        [subField]: id.subject,
+        email: id.emailVerified ? id.email : undefined,
+        displayName: id.name,
+        // Google and Apple have already checked the mailbox; re-asking would be theatre.
+        emailVerifiedAt: id.emailVerified ? new Date() : null,
+      });
+    } else if (id.emailVerified && id.email && u.email === id.email) {
+      await markEmailVerified(u);
+    }
     return finishSignIn(u, isNew);
   }
 
   // ----- email OTP -----
+  // Also the resend for a sign-up waiting on verification: same key, so the newest code always wins.
   r.post('/otp/request', asyncHandler(async (req, res) => {
     const { email: addr } = parse(z.object({ email }), req.body);
+    const pending = await User.exists({ email: addr, emailVerifiedAt: null, deletedAt: null });
     const { code: c, resendAfterSeconds } = await issueOtp(`email:${addr}`);
-    await s.mailer.send({
-      to: addr,
-      subject: 'Your Saathi sign-in code',
-      text: `Your Saathi code is ${c}. It expires in 10 minutes. If you did not ask for it, ignore this email.`,
-    });
+    await sendCode(addr, pending ? 'verify' : 'signin', c);
     res.json({ ok: true, resendAfterSeconds });
   }));
 
   r.post('/otp/verify', asyncHandler(async (req, res) => {
     const { email: addr, code: c, signup: form } = parse(z.object({ email, code, signup: signup.optional() }), req.body);
     await checkOtp(`email:${addr}`, c);
+    const now = new Date();
     let u = await User.findOne({ email: addr });
-    const isNew = !u;
-    u ??= await User.create({ email: addr, ...fieldsForNewUser(form, new Date()) });
+    // Created moments ago by /signup and never confirmed: this call completes that sign-up,
+    // so the app should treat it as a new account even though the row already existed.
+    const isNew = !u || !u.emailVerifiedAt;
+    // Created by /signup and waiting, or brand new from this code: either way the mailbox is now proven.
+    u ??= await User.create({ email: addr, emailVerifiedAt: now, ...fieldsForNewUser(form, now) });
+    await markEmailVerified(u);
     res.json(await finishSignIn(u, isNew));
   }));
 
   // ----- email + password -----
+  /**
+   * Sign-up does NOT sign anyone in: it creates the account unverified and emails a code, which
+   * POST /otp/verify exchanges for tokens. The response is deliberately shaped like
+   * /otp/request so the app can send both to the same code screen.
+   */
   r.post('/signup', asyncHandler(async (req, res) => {
     const { email: addr, password: pw, signup: form } = parse(z.object({ email, password, signup: signup.optional() }), req.body);
-    if (await User.exists({ email: addr })) throw conflict('An account with this email already exists. Sign in instead.', 'email_in_use');
-    const u = await User.create({ email: addr, passwordHash: await hashPassword(pw), ...fieldsForNewUser(form, new Date()) });
-    res.json(await finishSignIn(u, true));
+    const existing = await User.findOne({ email: addr }).select('emailVerifiedAt deletedAt');
+    // A verified account (or a deleted one, which must not be silently revived) is a conflict.
+    if (existing && (existing.emailVerifiedAt || existing.deletedAt)) {
+      throw conflict('An account with this email already exists. Sign in instead.', 'email_in_use');
+    }
+    // Unverified and still pending: she closed the app mid-signup. Resend the code and let her
+    // carry on. The stored password is left alone, so a stranger cannot overwrite it this way.
+    if (!existing) {
+      await User.create({ email: addr, passwordHash: await hashPassword(pw), ...fieldsForNewUser(form, new Date()) });
+    }
+    const { code: c, resendAfterSeconds } = await issueOtp(`email:${addr}`);
+    await sendCode(addr, 'verify', c);
+    res.json({ ok: true, emailVerificationRequired: true, resendAfterSeconds });
   }));
 
   r.post('/login', asyncHandler(async (req, res) => {
@@ -100,6 +141,10 @@ export function authRoutes(s: Services): Router {
     u.failedLogins = ok.failedLogins;
     u.loginLockedUntil = ok.loginLockedUntil;
     await u.save();
+    // Checked only after the password is accepted, so this never reveals which addresses exist.
+    if (!u.emailVerifiedAt) {
+      throw new ApiError(403, 'email_not_verified', 'Confirm your email to finish setting up your account.');
+    }
     res.json(await finishSignIn(u, false));
   }));
 
@@ -109,11 +154,7 @@ export function authRoutes(s: Services): Router {
     const u = await User.findOne({ email: addr }).select('deletedAt');
     if (!u || u.deletedAt) { res.json({ ok: true, resendAfterSeconds: 60 }); return; } // never reveal whether an email has an account
     const { code: c, resendAfterSeconds } = await issueOtp(`reset:${addr}`);
-    await s.mailer.send({
-      to: addr,
-      subject: 'Reset your Saathi password',
-      text: `Your Saathi password reset code is ${c}. It expires in 10 minutes. If you did not ask for it, ignore this email.`,
-    });
+    await sendCode(addr, 'reset', c);
     res.json({ ok: true, resendAfterSeconds });
   }));
 
@@ -125,6 +166,8 @@ export function authRoutes(s: Services): Router {
     u.passwordHash = await hashPassword(pw);
     u.failedLogins = 0;
     u.loginLockedUntil = null;
+    // She just read a code sent to this address, so the mailbox is proven even if sign-up never finished.
+    u.emailVerifiedAt ??= new Date();
     await u.save();
     res.json(await finishSignIn(u, false));
   }));

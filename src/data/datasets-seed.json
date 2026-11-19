@@ -4,7 +4,7 @@
     "One Dataset per onboarding/settings question. Screens render from this, never from hard-coded lists.",
     "selection: single | multi. allowCustom: user can add an option (stored as source:'user').",
     "showIf: dataset becomes visible when ANY listed answer is selected in the referenced dataset (answer-dependent follow-ups).",
-    "regions: option shown only for these country codes; omit = global. labelUr to be filled for Urdu."
+    "regions: option shown only for these country codes; omit = global."
   ],
   "datasets": [
     {

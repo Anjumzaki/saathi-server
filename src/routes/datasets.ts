@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { Dataset, UserOption } from '../models/Dataset';
 import { MAX_CUSTOM_PER_DATASET, labelKey, optionsFor, shortId, validateCustomLabel } from '../services/datasetLogic';
+import { requireAuth } from '../middleware/auth';
 import { verifyAccessToken } from '../services/tokens';
 import { badRequest, conflict, notFound } from '../utils/errors';
 import { asyncHandler, authOf, parse } from '../utils/http';
@@ -37,7 +38,7 @@ export function datasetRoutes(): Router {
       const opts = optionsFor(d as never, q.country).map((o) => ({ ...o }));
       const own = mine.filter((m) => m.datasetKey === d.key).map((m) => ({ id: m.optionId, label: m.label, source: 'user' as const, order: 10_000 }));
       return {
-        key: d.key, question: d.question, questionUr: d.questionUr, selection: d.selection, allowCustom: d.allowCustom,
+        key: d.key, question: d.question, selection: d.selection, allowCustom: d.allowCustom,
         minPick: d.minPick, showIf: d.showIf ?? undefined, version: d.version, options: [...opts, ...own],
       };
     });
@@ -67,6 +68,33 @@ export function datasetRoutes(): Router {
     }
     const doc = await UserOption.create({ userId, datasetKey: key, optionId: `u_${shortId()}`, label: v.label, labelKey: lk });
     res.status(201).json({ option: { id: doc.optionId, label: doc.label, source: 'user' } });
+  }));
+
+  // Rename one of the signed-in user's own options.
+  r.patch('/:key/options/:optionId', requireAuth, asyncHandler(async (req, res) => {
+    const { userId } = authOf(req);
+    const key = String(req.params['key']);
+    const optionId = String(req.params['optionId']);
+    const { label: raw } = parse(z.object({ label: z.string() }), req.body);
+    const v = validateCustomLabel(raw);
+    if (!v.ok) throw badRequest(v.reason);
+    const doc = await UserOption.findOne({ userId, datasetKey: key, optionId });
+    if (!doc) throw notFound();
+    const lk = labelKey(v.label);
+    const d = await Dataset.findOne({ key, active: true }).lean();
+    if (d?.options.some((o) => o.active !== false && o.label.toLocaleLowerCase() === lk)) throw conflict('That is already in the list.');
+    if (await UserOption.exists({ userId, datasetKey: key, labelKey: lk, optionId: { $ne: optionId } })) throw conflict('You already added that.');
+    doc.label = v.label;
+    doc.labelKey = lk;
+    await doc.save();
+    res.json({ option: { id: doc.optionId, label: doc.label, source: 'user' } });
+  }));
+
+  // Delete one of the signed-in user's own options.
+  r.delete('/:key/options/:optionId', requireAuth, asyncHandler(async (req, res) => {
+    const { userId } = authOf(req);
+    await UserOption.deleteOne({ userId, datasetKey: String(req.params['key']), optionId: String(req.params['optionId']) });
+    res.status(204).end();
   }));
 
   return r;

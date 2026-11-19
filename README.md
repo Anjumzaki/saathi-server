@@ -43,8 +43,10 @@ tests/                     vitest: pure logic + HTTP wiring that needs no databa
 | `ACCESS_TOKEN_TTL_MIN` / `REFRESH_TOKEN_TTL_DAYS` | 15 / 30 | |
 | `ADMIN_EMAILS` | empty | comma list; these emails get the `admin` role on sign-in |
 | `CORS_ORIGINS` | empty (CORS off) | comma list; the Android app does not need CORS |
-| `APP_LINK_BASE` | https://saathi.example | base of partner invite links |
+| `APP_LINK_BASE` | https://saathi-app.com | base of partner invite links |
 | `CONFIG_CACHE_TTL_SECONDS` | 60 | fee/package cache TTL |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | empty / 465 | OTP sender. GoDaddy Professional Email (Titan): `smtpout.secureserver.net`, 465 SSL, username = full address, password = the mailbox password. `MAIL_FROM` must use the same address. Verify with `npm run mail:check` |
+| `RESEND_API_KEY` | empty | used only when SMTP is not fully set |
 | `ALLOW_STUB_PROVIDERS` | false | in production, stub SMS/Google/Apple/Play/AI are refused (HTTP 501) unless `true`. Never set it in a real launch |
 | `GOOGLE_CLIENT_IDS`, `APPLE_CLIENT_ID`, `PLAY_PACKAGE_NAME`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `ANTHROPIC_API_KEY` | | reserved for the real providers (see "Stubs") |
 
@@ -146,7 +148,19 @@ heroku logs --tail
 ```
 
 The Node buildpack runs `npm run build`; `Procfile` is `web: node dist/index.js`; `engines.node` is `22.x`; the app listens on `$PORT` and keeps no local-disk state (documents, photos and plan files are references to external object storage).
-Until the real mailer is wired in, no one can receive OTP emails in production: see "Stubs".
+**Mail gotcha**: GoDaddy's relay (`smtpout.secureserver.net`) refuses connections from some
+residential ISPs -- it answers with a banner, then resets before AUTH, on 465 and 587 alike.
+`npm run mail:check` therefore fails from such a network while production is perfectly healthy.
+To test the real path, send from a one-off dyno, which uses the app's own config vars:
+
+```
+heroku run -a saathi "node -e 'const n=require(\"nodemailer\");const p=+process.env.SMTP_PORT;n.createTransport({host:process.env.SMTP_HOST,port:p,secure:p===465,requireTLS:p!==465,auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}}).sendMail({from:process.env.MAIL_FROM,to:\"you@example.com\",subject:\"check\",text:\"hi\"}).then(i=>console.log(i.response)).catch(e=>console.log(\"FAILED:\",e.message))'"
+```
+
+Quote the whole command: `heroku run` claims `-e` for itself as `--env` and will silently drop it.
+
+Mail must be configured or no one can receive a sign-in code. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM`
+(or `RESEND_API_KEY`) with `heroku config:set`, then check the mailbox first with `npm run mail:check you@example.com`.
 
 **AWS later**: same container-friendly process. Config via env (SSM/Secrets Manager), logs to stdout, health check at `GET /health`, `trust proxy` already set for a load balancer, and `settle-orders` can move to EventBridge.
 
@@ -154,7 +168,7 @@ Until the real mailer is wired in, no one can receive OTP emails in production: 
 
 | Interface | Stub | Needed for production |
 |---|---|---|
-| `Mailer` | console (suppresses bodies in production) | real sender (SES/SendGrid/Postmark) |
+| `Mailer` | console (suppresses bodies in production) | done: `SmtpMailer` (any SMTP, incl. GoDaddy Titan) or `ResendMailer`, chosen in `src/index.ts` from the env |
 | `SmsProvider` | console | Twilio/Unifonic/SNS |
 | `IdTokenVerifier` (Google, Apple) | accepts `stub:<subject>:<email>` | verify signature/iss/aud/exp against Google and Apple JWKS |
 | `PlayBilling` | tokens `stub_valid*`, `stub_trial*` | Play Developer API: subscriptionsv2 / products get, acknowledge, voided purchases/refund |

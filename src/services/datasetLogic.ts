@@ -3,7 +3,6 @@
 export interface DatasetOption {
   id: string;
   label: string;
-  labelUr?: string;
   icon?: string;
   tags?: string[];
   regions?: string[];
@@ -67,11 +66,43 @@ export function normalizeLabel(raw: string): string {
 }
 export const labelKey = (raw: string): string => normalizeLabel(raw).toLocaleLowerCase();
 
+const VOWELS = /[aeiouy]/;
+const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm', '1234567890'];
+const hasKeyboardRun = (w: string) => KEY_ROWS.some(row => { for (let i = 0; i + 4 <= row.length; i++) { const run = row.slice(i, i + 4); if (w.includes(run) || w.includes([...run].reverse().join(''))) return true; } return false; });
+
+/**
+ * Is this word plausibly a real word? Cheap offline checks that catch mashing and laughing ("HAHAHAHH", "asdfgh", "aaaaa",
+ * "xzqwkj") without a dictionary, so spellings from any cuisine still pass. Only plain Latin words are judged.
+ */
+function wordLooksReal(raw: string): boolean {
+  const w = raw.toLowerCase().replace(/[^\p{L}]/gu, '');
+  if (!w || /[^a-z]/.test(w)) return true; // other scripts (non-Latin scripts) are not judged here
+  if (/^(lol+|lmao|rofl|omg|wtf|idk|bruh|blah|abc|xyz|test|testing|null|undefined|(ha|he|hi|ho)+h?)$/.test(w)) return false; // jokes and placeholders
+  if (w.length >= 4 && !VOWELS.test(w)) return false; // "hmmm", "xzqwkj" (3-letter abbreviations like BBQ are fine)
+  if (/(.)\1\1/.test(w)) return false; // "aaa", "hahhhh"
+  if (/(.{2,3})\1\1/.test(w)) return false; // "hahaha", "lolololo"
+  if (/[^aeiouy]{5,}/.test(w)) return false; // five consonants in a row
+  if (w.length >= 6 && new Set(w).size / w.length < 0.3) return false; // "hahahahh"
+  if (hasKeyboardRun(w)) return false; // "asdf", "qwer", "zxcv"
+  return true;
+}
+
+/** Why a typed name does not look like a real food or kitchen item, or null when it does. */
+export function labelProblem(label: string): string | null {
+  if (!/^[\p{L}\p{M}0-9 '’&.,()/+–-]+$/u.test(label)) return 'Use letters and numbers only';
+  const letters = label.replace(/[^\p{L}]/gu, '');
+  if (letters.length < 2) return 'Use at least 2 letters';
+  if ((label.match(/[0-9]/g) ?? []).length > label.length / 3) return 'That has too many numbers to be an item';
+  const words = label.split(/[^\p{L}]+/u).filter(w => w.length > 0);
+  if (words.some(w => !wordLooksReal(w))) return "That doesn't look like a real item. Check the spelling.";
+  return null;
+}
 export function validateCustomLabel(raw: string): { ok: true; label: string } | { ok: false; reason: string } {
   const label = normalizeLabel(raw);
   if (!label) return { ok: false, reason: 'Label is empty' };
   if (label.length > MAX_CUSTOM_LABEL) return { ok: false, reason: `Label is longer than ${MAX_CUSTOM_LABEL} characters` };
-  return { ok: true, label };
+  const problem = labelProblem(label);
+  return problem ? { ok: false, reason: problem } : { ok: true, label };
 }
 
 export function shortId(): string {

@@ -13,3 +13,4 @@ coverage/
 *.pem
 *.key
 service-account*.json
+tmp/

@@ -4,6 +4,7 @@ import { getEnv } from './config/env';
 import { FallbackMailer } from './services/fallbackMailer';
 import { ResendMailer } from './services/resendMailer';
 import { SmtpMailer } from './services/smtpMailer';
+import { AnthropicPlanReader } from './services/anthropicPlanReader';
 import { createStubServices } from './stubs';
 import { log } from './utils/logger';
 
@@ -18,6 +19,8 @@ async function main(): Promise<void> {
   if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
     services.mailer = new SmtpMailer({ host: env.SMTP_HOST, port: env.SMTP_PORT, user: env.SMTP_USER, pass: env.SMTP_PASS, from: env.MAIL_FROM });
   } else if (env.RESEND_API_KEY) services.mailer = new ResendMailer(env.RESEND_API_KEY, env.MAIL_FROM);
+  if (env.ANTHROPIC_API_KEY) services.aiPlanReader = new AnthropicPlanReader({ apiKey: env.ANTHROPIC_API_KEY, model: env.ANTHROPIC_MODEL });
+  else log.warn('ANTHROPIC_API_KEY is not set: "Read with AI" returns a sample draft (dev) or is refused (production).');
   if (env.LOG_OTP) {
     // Staging: never block sign-in on mail. Codes are printed to the logs when the real mailer is missing or failing.
     services.mailer = new FallbackMailer(env.SMTP_HOST || env.RESEND_API_KEY ? services.mailer : null);

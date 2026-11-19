@@ -15,7 +15,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "seed": "node dist/seed.js",
-    "seed:dev": "tsx src/seed.ts"
+    "seed:dev": "tsx src/seed.ts",
+    "mail:check": "tsx scripts/check-mail.ts",
+    "mail:preview": "tsx scripts/preview-email.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

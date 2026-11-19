@@ -33,6 +33,9 @@ const userSchema = new Schema(
     appleSub: { type: String, unique: true, sparse: true },
     phone: { type: String },
     phoneVerified: { type: Boolean, default: false },
+    // Set the moment control of the mailbox is proven: an emailed code is entered, a password is
+    // reset with one, or Google/Apple assert the address is verified. Null = sign-in is refused.
+    emailVerifiedAt: { type: Date, default: null },
     termsAcceptedAt: { type: Date, default: null },
     termsVersion: { type: String, default: null },
     subscription: { type: subscriptionSchema, default: () => ({ status: 'none' }) },

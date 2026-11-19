@@ -1,0 +1,22 @@
+<!--
+  Saathi's companion, for transactional email.
+  Geometry copied 1:1 from mobile/src/components/Mascot.tsx, pose "Default", body = colours.rose
+  (#F8BBD0), on the 120 viewBox the app uses. If the mascot changes in the app, change it here too
+  and re-render the PNG (see server/README.md).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <path d="M100 78 C110 84 114 92 110 100" stroke="#F8BBD0" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <path d="M20 78 C10 84 6 92 10 100" stroke="#F8BBD0" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <ellipse cx="60" cy="72" rx="42" ry="38" fill="#F8BBD0"/>
+  <circle cx="86" cy="21" r="6" fill="#E1BEE7"/>
+  <circle cx="94.5" cy="27" r="6" fill="#E1BEE7"/>
+  <circle cx="91.5" cy="37" r="6" fill="#E1BEE7"/>
+  <circle cx="80.5" cy="37" r="6" fill="#E1BEE7"/>
+  <circle cx="77.5" cy="27" r="6" fill="#E1BEE7"/>
+  <circle cx="86" cy="30" r="4" fill="#C9A227"/>
+  <circle cx="40" cy="80" r="6" fill="#F48FB1" fill-opacity="0.7"/>
+  <circle cx="80" cy="80" r="6" fill="#F48FB1" fill-opacity="0.7"/>
+  <circle cx="48" cy="68" r="3.8" fill="#5A1E38"/>
+  <circle cx="72" cy="68" r="3.8" fill="#5A1E38"/>
+  <path d="M51 80 Q60 88 69 80" stroke="#5A1E38" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+</svg>

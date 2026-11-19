@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import type { Services } from '../interfaces';
 import { requirePremium } from '../middleware/auth';
+import { aiReadLimiter } from '../middleware/rateLimit';
 import { Plan } from '../models/Plan';
 import { RegionPack } from '../models/RegionPack';
 import { planContentSchema, planItemSchema } from '../schemas/plan';
@@ -10,9 +11,15 @@ import { nextVersion, type StoredVersion } from '../services/planVersioning';
 import { badRequest, notFound } from '../utils/errors';
 import { asyncHandler, authOf, objectId, parse } from '../utils/http';
 
+/** Largest document accepted (decoded). A phone photo is usually 1 to 4 MB; a plan PDF a few hundred KB. */
+export const IMPORT_MAX_BYTES = 8 * 1024 * 1024;
+const fileSchema = z.object({
+  mediaType: z.enum(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']),
+  dataBase64: z.string().min(1).max(Math.ceil((IMPORT_MAX_BYTES * 4) / 3) + 8).regex(/^[A-Za-z0-9+/=\s]+$/, 'not base64'),
+});
 const importSchema = z
-  .object({ text: z.string().min(1).max(50_000).optional(), fileRef: z.string().min(1).max(500).optional(), locale: z.string().max(20).optional() })
-  .refine((v) => !!v.text !== !!v.fileRef, { message: 'Provide exactly one of text or fileRef' });
+  .object({ text: z.string().min(1).max(50_000).optional(), fileRef: z.string().min(1).max(500).optional(), file: fileSchema.optional(), locale: z.string().max(20).optional() })
+  .refine((v) => [v.text, v.fileRef, v.file].filter((x) => !!x).length === 1, { message: 'Provide exactly one of text, file or fileRef' });
 
 const checkSchema = z.object({
   items: z.array(planItemSchema.partial({ key: true, daysOfWeek: true, tier: true, options: true })).max(200),
@@ -32,7 +39,7 @@ export function planRoutes(s: Services): Router {
   const r = Router();
 
   /** Premium only. ALWAYS returns a draft for the review screen; this route never persists a plan. */
-  r.post('/import-ai', requirePremium, asyncHandler(async (req, res) => {
+  r.post('/import-ai', requirePremium, aiReadLimiter, asyncHandler(async (req, res) => {
     const input = parse(importSchema, req.body);
     const draft = await s.aiPlanReader.read(input);
     res.json({ draft, saved: false, requiresReview: true });

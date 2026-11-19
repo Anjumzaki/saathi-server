@@ -21,7 +21,7 @@ const schema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(365),
   ADMIN_EMAILS: csv,
   CORS_ORIGINS: csv,
-  APP_LINK_BASE: z.string().default('https://saathi.example'),
+  APP_LINK_BASE: z.string().default('https://saathi-app.com'),
   CONFIG_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).default(60),
   ALLOW_STUB_PROVIDERS: z
     .enum(['true', 'false'])
@@ -34,8 +34,10 @@ const schema = z.object({
   SMTP_PORT: z.coerce.number().int().positive().default(465),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  MAIL_FROM: z.string().default('Saathi <no-reply@saathi.example>'),
+  MAIL_FROM: z.string().default('Saathi <support@saathi-app.com>'),
   LOG_OTP: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-sonnet-5-5'),
   PLAY_PACKAGE_NAME: z.string().default('com.saathi.app'),
 });
 

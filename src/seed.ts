@@ -5,6 +5,7 @@ import seedData from './data/datasets-seed.json';
 import { Dataset } from './models/Dataset';
 import { FeeConfigModel, PackageConfig } from './models/PackageConfig';
 import { RegionPack } from './models/RegionPack';
+import { User } from './models/User';
 import { DEFAULT_FEE_CONFIG } from './services/feeConfig';
 import { applyDiscount } from './services/money';
 import { log } from './utils/logger';
@@ -35,7 +36,7 @@ export const REGION_PACKS = [
   { country: 'US', name: 'United States', quietHourProvider: false, powerCutMode: false, produce: ['apple', 'broccoli', 'sweet potato', 'blueberries', 'avocado'], proteinKeywords: ['egg', 'turkey', 'chicken', 'beans', 'greek yogurt', 'cottage cheese', 'tofu', 'tempeh', 'protein shake'] },
 ] as const;
 
-type SeedOption = { id: string; label: string; labelUr?: string; icon?: string; tags?: string[]; regions?: string[] };
+type SeedOption = { id: string; label: string; icon?: string; tags?: string[]; regions?: string[] };
 type SeedDataset = { key: string; question: string; selection: 'single' | 'multi'; allowCustom?: boolean; minPick?: number; showIf?: Record<string, string[]>; options: SeedOption[] };
 
 /** Inserts each dataset only when its key is missing, so admin edits and promoted options survive re-seeding. */
@@ -84,6 +85,15 @@ export async function seed(): Promise<void> {
   );
 
   for (const rp of REGION_PACKS) await RegionPack.updateOne({ country: rp.country }, { $setOnInsert: rp }, { upsert: true });
+
+  // One-time backfill for accounts that predate email verification. They signed up when no code was
+  // asked for, so locking them out now would be punishing them for our change. Runs in the release
+  // phase before the new code serves traffic; `$exists: false` makes it a no-op on every later deploy.
+  const backfilled = await User.updateMany(
+    { emailVerifiedAt: { $exists: false } },
+    [{ $set: { emailVerifiedAt: { $ifNull: ['$createdAt', new Date()] } } }],
+  );
+  if (backfilled.modifiedCount) log.info('backfilled emailVerifiedAt', { users: backfilled.modifiedCount });
 }
 
 if (require.main === module) {

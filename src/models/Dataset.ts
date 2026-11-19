@@ -4,7 +4,6 @@ const optionSchema = new Schema(
   {
     id: { type: String, required: true },
     label: { type: String, required: true },
-    labelUr: String,
     icon: String,
     tags: { type: [String], default: [] },
     regions: { type: [String], default: [] },
@@ -19,7 +18,6 @@ const datasetSchema = new Schema(
   {
     key: { type: String, required: true, unique: true },
     question: { type: String, required: true },
-    questionUr: String,
     selection: { type: String, enum: ['single', 'multi'], required: true },
     allowCustom: { type: Boolean, default: false },
     minPick: { type: Number, default: 0 },

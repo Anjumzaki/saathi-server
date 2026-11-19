@@ -169,12 +169,12 @@ export function adminRoutes(s: Services): Router {
   // ---- datasets (onboarding / settings questions) ----
   const optionBody = z.object({
     id: z.string().regex(/^[a-z0-9_]{1,40}$/),
-    label: z.string().min(1).max(60), labelUr: z.string().max(60).optional(), icon: z.string().max(30).optional(),
+    label: z.string().min(1).max(60), icon: z.string().max(30).optional(),
     tags: z.array(z.string().max(30)).max(10).default([]), regions: z.array(z.string().length(2).toUpperCase()).max(50).default([]),
     source: z.enum(['seed', 'user', 'dietitian', 'promoted']).default('seed'), order: z.number().int().default(0), active: z.boolean().default(true),
   });
   const datasetBody = z.object({
-    question: z.string().min(1).max(200), questionUr: z.string().max(200).optional(),
+    question: z.string().min(1).max(200),
     allowCustom: z.boolean(), minPick: z.number().int().min(0).max(10), active: z.boolean().default(true),
     showIf: z.record(z.array(z.string())).nullable().default(null), options: z.array(optionBody).max(200),
   });
@@ -206,12 +206,12 @@ export function adminRoutes(s: Services): Router {
   // Promote a popular custom entry into the shared list (appended, source 'promoted'; clients get it on next fetch).
   r.post('/datasets/:key/promote', asyncHandler(async (req, res) => {
     const key = String(req.params['key']);
-    const body = parse(z.object({ label: z.string().min(1).max(60), labelUr: z.string().max(60).optional(), tags: z.array(z.string().max(30)).default([]) }), req.body);
+    const body = parse(z.object({ label: z.string().min(1).max(60), tags: z.array(z.string().max(30)).default([]) }), req.body);
     const d = await Dataset.findOne({ key });
     if (!d) throw notFound();
     const id = `p_${slugId(body.label)}`;
     if (d.options.some((o) => o.id === id || o.label.toLowerCase() === body.label.toLowerCase())) throw conflict('Already in the list');
-    d.options.push({ id, label: body.label, labelUr: body.labelUr, tags: body.tags, regions: [], source: 'promoted', order: d.options.length, active: true } as never);
+    d.options.push({ id, label: body.label, tags: body.tags, regions: [], source: 'promoted', order: d.options.length, active: true } as never);
     d.version += 1;
     await d.save();
     // Existing users who typed this label keep working: map their user option id to the promoted id is a client concern

@@ -1,8 +1,10 @@
 import type { PlanContent } from '../schemas/plan';
 import type { PlayVerification } from '../services/entitlement';
 
+/** `text` is always required: some clients, and our own log fallback, never render the html. */
+export interface MailMessage { to: string; subject: string; text: string; html?: string | undefined }
 export interface Mailer {
-  send(msg: { to: string; subject: string; text: string }): Promise<void>;
+  send(msg: MailMessage): Promise<void>;
 }
 
 export interface SmsProvider {
@@ -39,8 +41,15 @@ export interface AiPlanDraft extends PlanContent {
   source: 'stub' | 'anthropic';
   warnings: string[];
 }
+export interface PlanReadInput {
+  text?: string | undefined;
+  fileRef?: string | undefined;
+  /** The document itself (PDF or image), base64. Nothing is stored. */
+  file?: { mediaType: string; dataBase64: string } | undefined;
+  locale?: string | undefined;
+}
 export interface AiPlanReader {
-  read(input: { text?: string | undefined; fileRef?: string | undefined; locale?: string | undefined }): Promise<AiPlanDraft>;
+  read(input: PlanReadInput): Promise<AiPlanDraft>;
 }
 
 export interface Services {
