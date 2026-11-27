@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 
-export const ROLES = ['client', 'dietitian', 'partner', 'admin'] as const;
+export const ROLES = ['client', 'dietitian', 'saathi_dietitian', 'partner', 'admin'] as const;
 export type Role = (typeof ROLES)[number];
 
 const subscriptionSchema = new Schema(
@@ -42,6 +42,8 @@ const userSchema = new Schema(
     termsVersion: { type: String, default: null },
     subscription: { type: subscriptionSchema, default: () => ({ status: 'none' }) },
     deletedAt: { type: Date, default: null },
+    /** Set when the purge has erased everything; keeps a second sweep from walking old accounts. */
+    purgedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

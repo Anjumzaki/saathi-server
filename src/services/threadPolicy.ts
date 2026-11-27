@@ -1,12 +1,6 @@
 /** Pure rules for chat and call bookings: paging sizes, the notice period, and the two product defaults. */
 import type { CallChannel } from '../models/CallBooking';
 
-/**
- * The first version of chat is text only. Photos and files are a later decision (who stores them, how
- * long they are kept, what a dietitian may download), so the send endpoint accepts nothing else.
- */
-export const TEXT_ONLY = true;
-
 export const MESSAGE_PAGE_SIZE = 30;
 export const MESSAGE_PAGE_MAX = 100;
 

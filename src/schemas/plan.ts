@@ -82,10 +82,12 @@ export const planProfileSchema = z.object({
   walkWhen: z.string().max(60).optional(),
   cyclePattern: z.string().max(60).optional(),
   country: z.string().max(60).optional(),
-  heightCm: z.number().min(80).max(250).optional(),
-  weightKg: z.number().min(25).max(400).optional(),
-  weightGoalKg: z.number().min(25).max(400).optional(),
-  age: z.number().int().min(13).max(100).optional(),
+  // Saathi is an 18+ app (see terms.html), so the body numbers start at an adult's. The old floors
+  // (age 13, height 80 cm, weight 25 kg) described a child, and this body is what reaches the model.
+  heightCm: z.number().min(120).max(250).optional(),
+  weightKg: z.number().min(30).max(400).optional(),
+  weightGoalKg: z.number().min(30).max(400).optional(),
+  age: z.number().int().min(18).max(100).optional(),
   wakeMin: minuteOfDay.optional(),
   bedMin: minuteOfDay.optional(),
   mainMeals: z.number().int().min(1).max(5).optional(),

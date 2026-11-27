@@ -366,6 +366,7 @@
       "key": "plan_source", "question": "Where does your plan come from?", "selection": "single", "allowCustom": false,
       "options": [
         { "id": "dietitian_pdf", "label": "My dietitian gave me a PDF / photo", "tags": ["premium"] },
+        { "id": "generated", "label": "Saathi wrote it with AI", "tags": ["premium"] },
         { "id": "chat", "label": "It's in a chat (WhatsApp)", "tags": ["premium"] },
         { "id": "paper", "label": "On paper, I'll type it in" },
         { "id": "build", "label": "Build one with Saathi" },

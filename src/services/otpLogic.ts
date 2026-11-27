@@ -111,3 +111,55 @@ export function otpFailureError(ev: OtpEvaluation, cfg = OTP_CONFIG): OtpErrorSh
       return { status: 400, code: OtpErrorCode.INCORRECT, message: 'Incorrect code.', details: { attemptsLeft: ev.attemptsLeft } };
   }
 }
+
+/**
+ * How many text messages one number, and one account, may be sent.
+ *
+ * The code machinery above already stops a second code inside a minute and locks the slot after five
+ * wrong guesses, which is enough for a code that costs nothing to email. A text costs real money every
+ * time and is the thing people abuse, so there is a second, blunter limit: by number, because one woman
+ * must not be able to have a stranger's phone buzzing all evening, and by account, because one account
+ * must not be able to text a hundred different numbers.
+ *
+ * The hourly number cap is also the cap on resends: three texts to a number in an hour and no more.
+ */
+export const SMS_LIMITS = {
+  perNumberPerHour: 3,
+  perNumberPerDay: 5,
+  perAccountPerHour: 5,
+  perAccountPerDay: 10,
+} as const;
+export type SmsLimits = typeof SMS_LIMITS;
+
+export type SmsQuotaDecision = { allowed: true } | { allowed: false; scope: 'number' | 'account'; retryAfterSeconds: number };
+
+const HOUR_MS = 60 * MINUTE;
+const DAY_MS = 24 * HOUR_MS;
+
+/**
+ * Pure: may another text go out? `sent` lists are the times (ms) of earlier sends, newest or oldest
+ * first, it does not matter. `retryAfterSeconds` is when the oldest send in the full window drops out.
+ */
+export function checkSmsQuota(
+  sentToNumber: readonly number[],
+  sentForAccount: readonly number[],
+  now: number,
+  cfg: SmsLimits = SMS_LIMITS,
+): SmsQuotaDecision {
+  const checks = [
+    { scope: 'number' as const, sent: sentToNumber, hour: cfg.perNumberPerHour, day: cfg.perNumberPerDay },
+    { scope: 'account' as const, sent: sentForAccount, hour: cfg.perAccountPerHour, day: cfg.perAccountPerDay },
+  ];
+  for (const c of checks) {
+    for (const [windowMs, cap] of [[HOUR_MS, c.hour], [DAY_MS, c.day]] as const) {
+      const inWindow = c.sent.filter((t) => t > now - windowMs);
+      if (inWindow.length < cap) continue;
+      const oldest = Math.min(...inWindow);
+      return { allowed: false, scope: c.scope, retryAfterSeconds: secs(oldest + windowMs - now) };
+    }
+  }
+  return { allowed: true };
+}
+
+/** Nothing older than a day can affect a decision, so it is dropped rather than kept for ever. */
+export const forgetOldSends = (sent: readonly number[], now: number): number[] => sent.filter((t) => t > now - DAY_MS);

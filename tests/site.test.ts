@@ -34,11 +34,9 @@ describe('website', () => {
     expect(index.status).toBe(301);
     expect(index.headers.get('location')).toBe('/');
   });
-  it('compresses pages and keeps the API out of search results', async () => {
-    const r = await fetch(base + '/features.html', { headers: { 'accept-encoding': 'gzip' } });
-    expect(r.headers.get('content-encoding')).toBe('gzip');
+  it('keeps the API out of search results', async () => {
     expect((await fetch(base + '/health')).headers.get('x-robots-tag')).toBe('noindex');
-    expect(r.headers.get('x-robots-tag')).toBeNull();
+    expect((await page('/features.html')).headers.get('x-robots-tag')).toBeNull();
   });
   it('gives every page a title, a description and a canonical address on the main host', async () => {
     for (const p of ['/', '/pricing.html', '/blog-pcos-plate.html', '/about.html']) {

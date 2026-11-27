@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saathi review tool</title>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="same-origin">
+<meta name="description" content="Internal review tool: dietitian applications, website forms, packages and fees. Not part of the website.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cellipse cx='60' cy='72' rx='42' ry='38' fill='%23F8BBD0'/%3E%3Ccircle cx='48' cy='68' r='4' fill='%235A1E38'/%3E%3Ccircle cx='72' cy='68' r='4' fill='%235A1E38'/%3E%3Cpath d='M51 80 Q60 88 69 80' fill='none' stroke='%235A1E38' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#FFF8F4;--surface:#FFFFFF;--surface2:#F6E3EA;--text:#3D2A32;--body:#6D5560;--muted:#8E6A79;--head:#5A1E38;--primary:#BF4F7E;--onprimary:#FFFFFF;--line:#EBD5DE;--danger:#B3261E;--dangerbg:#FDECEA;--ok:#1B5E20;--okbg:#E8F5E9}
+@media (prefers-color-scheme:dark){:root{--bg:#241820;--surface:#3C2B34;--surface2:#4E1230;--text:#F0DEE5;--body:#D9BFCB;--muted:#C9A9B6;--head:#FFD9E7;--primary:#F4A9C8;--onprimary:#5A1E38;--line:#56404A;--danger:#FFB4AB;--dangerbg:#4E1511;--ok:#B7F0BA;--okbg:#17321A}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Poppins,"Segoe UI",system-ui,sans-serif;font-size:14px;line-height:1.5}
+h1{font-size:20px;margin:0;color:var(--head)}
+h2{font-size:17px;margin:0 0 10px;color:var(--head)}
+h3{font-size:14px;margin:0 0 6px;color:var(--head);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+p{margin:0 0 10px;color:var(--body)}
+a{color:var(--primary)}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--surface);border-bottom:1px solid var(--line)}
+main{max-width:1060px;margin:0 auto;padding:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;margin:0 0 16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.col{display:flex;flex-direction:column;gap:10px}
+.spread{display:flex;flex-wrap:wrap;gap:16px}
+.spread>div{min-width:170px;flex:1}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:0 0 4px}
+input,textarea,select{width:100%;font:inherit;font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+textarea{min-height:88px;resize:vertical}
+textarea.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;min-height:220px}
+button{font:inherit;font-weight:600;font-size:14px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid transparent;background:var(--primary);color:var(--onprimary);cursor:pointer}
+button.quiet{background:transparent;color:var(--primary);border-color:var(--line)}
+button.danger{background:var(--danger);color:var(--surface)}
+button[disabled]{opacity:.45;cursor:not-allowed}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.tabs button{background:transparent;color:var(--body);border-color:var(--line)}
+.tabs button[aria-current="page"]{background:var(--surface2);color:var(--head);border-color:var(--primary)}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+tr.pick{cursor:pointer}
+tr.pick:hover{background:var(--surface2)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--surface2);color:var(--head)}
+.tag.warn{background:var(--dangerbg);color:var(--danger)}
+.tag.good{background:var(--okbg);color:var(--ok)}
+.muted{color:var(--muted);font-size:12px}
+.note{background:var(--surface2);border-radius:12px;padding:10px 12px;white-space:pre-wrap;margin:0 0 10px}
+.decision{border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 10px}
+.decision.irreversible{border:2px solid var(--danger);background:var(--dangerbg)}
+.confirm{display:flex;gap:8px;align-items:flex-start;margin:10px 0}
+.confirm input{width:20px;height:20px;flex:0 0 auto;margin-top:2px}
+.confirm span{font-size:13px;color:var(--text);font-weight:400}
+.docs{display:flex;flex-direction:column;gap:12px;margin:0 0 16px}
+.doc{border:1px solid var(--line);border-radius:14px;padding:12px}
+.doc img{max-width:100%;max-height:70vh;border-radius:10px;margin-top:10px;display:block}
+.msg{border-radius:12px;padding:10px 12px;margin:0 0 12px;font-size:13px}
+.msg.err{background:var(--dangerbg);color:var(--danger)}
+.msg.ok{background:var(--okbg);color:var(--ok)}
+.signin{max-width:380px;margin:60px auto}
+dl{margin:0 0 14px;display:grid;grid-template-columns:minmax(130px,auto) 1fr;gap:6px 14px}
+dt{font-size:12px;color:var(--muted)}
+dd{margin:0;font-size:13px}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <h1>Saathi review tool</h1>
+    <span class="muted" id="who"></span>
+  </div>
+  <div class="row" id="headerActions" hidden>
+    <button class="quiet" id="signout" type="button">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <section class="signin card" id="signinView">
+    <h2>Sign in</h2>
+    <p>This tool needs a Saathi account with the admin role. Nothing is kept in this browser: reload the page and you are signed out.</p>
+    <div class="msg err" id="signinError" hidden></div>
+    <form id="signinForm" class="col">
+      <div>
+        <label for="email">Email</label>
+        <input id="email" type="email" name="email" autocomplete="username" required>
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <input id="password" type="password" name="password" autocomplete="current-password" required>
+      </div>
+      <div><button type="submit" id="signinGo">Sign in</button></div>
+    </form>
+  </section>
+
+  <section id="appView" hidden>
+    <nav class="tabs" id="tabs" aria-label="Sections">
+      <button type="button" data-tab="queue">Dietitians to review</button>
+      <button type="button" data-tab="forms">Website forms</button>
+      <button type="button" data-tab="packages">Packages</button>
+      <button type="button" data-tab="fees">Fees</button>
+    </nav>
+    <div class="msg err" id="error" hidden></div>
+    <div class="msg ok" id="said" hidden></div>
+
+    <div id="tab-queue" class="tabpane">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h2>Dietitians to review</h2>
+          <div class="row">
+            <select id="queueFilter" style="width:auto">
+              <option value="submitted,in_review">Waiting and in review</option>
+              <option value="submitted">Waiting</option>
+              <option value="in_review">In review</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="">Everyone</option>
+            </select>
+            <button class="quiet" type="button" id="queueReload">Reload</button>
+          </div>
+        </div>
+        <p class="muted">Oldest application first: she has waited longest.</p>
+        <div id="queueList"></div>
+      </div>
+      <div class="card" id="profileCard" hidden></div>
+    </div>
+
+    <div id="tab-forms" class="tabpane" hidden>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h2>Website forms</h2>
+          <div class="row">
+            <select id="leadKind" style="width:auto">
+              <option value="pro_application">Saathi Pro applications</option>
+              <option value="waitlist">Launch list</option>
+              <option value="">Both</option>
+            </select>
+            <button class="quiet" type="button" id="leadsReload">Reload</button>
+          </div>
+        </div>
+        <p class="muted">Newest first. These are people who filled in a form on the website; most have no account here yet.</p>
+        <div id="leadList"></div>
+      </div>
+    </div>
+
+    <div id="tab-packages" class="tabpane" hidden>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h2>Packages</h2>
+          <div class="row">
+            <button class="quiet" type="button" id="packageNew">New package</button>
+            <button class="quiet" type="button" id="packagesReload">Reload</button>
+          </div>
+        </div>
+        <p class="muted">Prices are in minor units (250000 is PKR 2,500.00). An order keeps its own copy of the price, so editing a package never changes one that has already been paid for.</p>
+        <div id="packageList"></div>
+      </div>
+      <div class="card" id="packageEditor" hidden></div>
+    </div>
+
+    <div id="tab-fees" class="tabpane" hidden>
+      <div class="card">
+        <h2>Fees and windows</h2>
+        <p class="muted">These decide what Saathi keeps, how long a client may ask for her money back, and how long a dietitian's share is held before it is released.</p>
+        <form id="feeForm" class="col">
+          <div class="spread" id="feeFields"></div>
+          <div class="row"><button type="submit">Save fees</button><span class="muted">Changing a discount does not rewrite prices already set on a band. Use "Recalculate prices" on the band for that.</span></div>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // The tokens live here and nowhere else - no cookie, no browser storage of any kind - so closing or
+  // reloading the tab ends the session, which is what we want on a shared machine.
+  var access = null;
+  var refresh = null;
+  var me = null;
+  var FEE_FIELDS = [
+    ['playFeePercent', 'Play / App Store fee %'],
+    ['platformFeePercent', 'Saathi fee %'],
+    ['payoutDelayHours', 'Hold her share for (hours)'],
+    ['refundWindowHours', 'Refund window (hours)'],
+    ['premiumDiscountPercent', 'Premium discount %'],
+    ['followUpDiscountPercent', 'Follow-up discount %'],
+  ];
+  var TABS = ['queue', 'forms', 'packages', 'fees'];
+  var loaders = {};
+
+  // ---------- DOM helpers. Anything from the API is written as text, never as markup ----------
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'class') n.className = attrs[k];
+      else if (k === 'text') n.textContent = attrs[k];
+      else if (k === 'on') Object.keys(attrs.on).forEach(function (e) { n.addEventListener(e, attrs.on[e]); });
+      else if (attrs[k] !== null && attrs[k] !== undefined && attrs[k] !== false) n.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (k) { if (k) n.appendChild(typeof k === 'string' ? document.createTextNode(k) : k); });
+    return n;
+  }
+  function $(id) { return document.getElementById(id); }
+  function fill(node, kids) { node.textContent = ''; (kids || []).forEach(function (k) { if (k) node.appendChild(k); }); }
+  function when(d) { return d ? new Date(d).toLocaleString() : '-'; }
+  function list(xs) { return (xs && xs.length) ? xs.join(', ') : '-'; }
+  function kb(n) { return typeof n === 'number' ? Math.max(1, Math.round(n / 1000)) + ' KB' : '-'; }
+
+  function say(what, isError) {
+    var box = isError ? $('error') : $('said');
+    (isError ? $('said') : $('error')).hidden = true;
+    box.textContent = what || '';
+    box.hidden = !what;
+    if (what) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /** Anything that can fail says why, in the server's own words, instead of failing silently. */
+  function guard(fn) {
+    return function () {
+      try {
+        return Promise.resolve(fn.apply(null, arguments)).catch(function (e) { say(e.message || String(e), true); });
+      } catch (e) {
+        say(e.message || String(e), true);
+        return Promise.resolve();
+      }
+    };
+  }
+
+  // ---------- the API ----------
+  async function request(path, options, retried) {
+    var opts = options || {};
+    var head = {};
+    if (access) head.authorization = 'Bearer ' + access;
+    if (opts.body) head['content-type'] = 'application/json';
+    var init = { method: opts.method || 'GET', headers: head };
+    if (opts.body) init.body = JSON.stringify(opts.body);
+    var r = await fetch(path, init);
+    // An access token lasts fifteen minutes; rotate it once rather than throw a reviewer out mid-queue.
+    if (r.status === 401 && refresh && !retried && (await renew())) return request(path, opts, true);
+    if (r.status === 401) { signedOut('Your session has ended. Sign in again.'); throw new Error('Signed out'); }
+    return r;
+  }
+
+  async function failure(r) {
+    var b = null;
+    try { b = await r.json(); } catch (e) { b = null; }
+    return new Error((b && b.error && b.error.message) || ('That did not work (' + r.status + ')'));
+  }
+
+  async function api(path, options) {
+    var r = await request(path, options);
+    if (r.status === 204) return null;
+    if (!r.ok) throw await failure(r);
+    try { return await r.json(); } catch (e) { return null; }
+  }
+
+  async function renew() {
+    try {
+      var r = await fetch('/v1/auth/refresh', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ refreshToken: refresh }) });
+      if (!r.ok) return false;
+      var b = await r.json();
+      access = b.tokens.accessToken;
+      refresh = b.tokens.refreshToken;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ---------- signing in and out ----------
+  function signedOut(why) {
+    access = null; refresh = null; me = null;
+    $('appView').hidden = true;
+    $('headerActions').hidden = true;
+    $('who').textContent = '';
+    $('signinView').hidden = false;
+    $('signinError').textContent = why || '';
+    $('signinError').hidden = !why;
+  }
+
+  $('signinForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var go = $('signinGo');
+    go.disabled = true;
+    $('signinError').hidden = true;
+    fetch('/v1/auth/login', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: $('email').value.trim(), password: $('password').value }),
+    }).then(async function (r) {
+      if (!r.ok) throw await failure(r);
+      return r.json();
+    }).then(function (b) {
+      if (!b.user || (b.user.roles || []).indexOf('admin') < 0) throw new Error('This account is not an admin.');
+      access = b.tokens.accessToken;
+      refresh = b.tokens.refreshToken;
+      me = b.user;
+      $('password').value = '';
+      $('signinView').hidden = true;
+      $('appView').hidden = false;
+      $('headerActions').hidden = false;
+      $('who').textContent = me.email || '';
+      show('queue');
+    }).catch(function (e) {
+      $('signinError').textContent = e.message;
+      $('signinError').hidden = false;
+    }).then(function () { go.disabled = false; });
+  });
+
+  $('signout').addEventListener('click', function () {
+    if (refresh) {
+      fetch('/v1/auth/logout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ refreshToken: refresh }) }).catch(function () {});
+    }
+    signedOut('');
+  });
+
+  // ---------- tabs ----------
+  function show(name) {
+    TABS.forEach(function (t) {
+      $('tab-' + t).hidden = t !== name;
+      var b = document.querySelector('[data-tab="' + t + '"]');
+      if (t === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    say('');
+    if (loaders[name]) loaders[name]();
+  }
+  $('tabs').addEventListener('click', function (ev) {
+    var t = ev.target.getAttribute && ev.target.getAttribute('data-tab');
+    if (t) show(t);
+  });
+
+  /** A button that stays disabled until the box is ticked. Every one-way decision goes through this. */
+  function guarded(labelText, confirmText, danger, run) {
+    var box = el('input', { type: 'checkbox' });
+    var btn = el('button', { type: 'button', class: danger ? 'danger' : 'quiet', disabled: 'disabled', text: labelText });
+    box.addEventListener('change', function () { btn.disabled = !box.checked; });
+    btn.addEventListener('click', guard(function () {
+      btn.disabled = true;
+      return Promise.resolve(run()).catch(function (e) { btn.disabled = false; box.checked = false; throw e; });
+    }));
+    return el('div', {}, [el('label', { class: 'confirm' }, [box, el('span', { text: confirmText })]), btn]);
+  }
+
+  // ---------- the review queue ----------
+  loaders.queue = guard(async function () {
+    var status = $('queueFilter').value;
+    var out = await api('/v1/admin/dietitians' + (status ? '?status=' + encodeURIComponent(status) : ''));
+    var rows = out.profiles || [];
+    if (!rows.length) { fill($('queueList'), [el('p', { class: 'muted', text: 'Nobody is waiting here.' })]); return; }
+    var head = el('thead', {}, [el('tr', {}, ['Name', 'Status', 'Sent', 'Where she works', 'Documents'].map(function (h) { return el('th', { text: h }); }))]);
+    var body = el('tbody', {}, rows.map(function (p) {
+      var open = function () { openProfile(p.id); };
+      return el('tr', { class: 'pick', tabindex: '0', on: { click: open, keydown: function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } } } }, [
+        el('td', {}, [el('strong', { text: p.displayName || '(no name)' }), el('div', { class: 'muted', text: p.credentials || '' })]),
+        el('td', {}, [statusTag(p.status)]),
+        el('td', { text: when(p.submittedAt) }),
+        el('td', { text: list(p.countries.concat(p.cities)) }),
+        el('td', { text: String(p.documents.filter(function (d) { return !d.removed; }).length) }),
+      ]);
+    }));
+    fill($('queueList'), [el('table', {}, [head, body])]);
+  });
+  // Reloading the list leaves an open application on screen; changing the filter closes it, since it may
+  // no longer be in the list.
+  $('queueReload').addEventListener('click', function () { loaders.queue(); });
+  $('queueFilter').addEventListener('change', function () { $('profileCard').hidden = true; loaders.queue(); });
+
+  function statusTag(s) {
+    return el('span', { class: 'tag' + (s === 'approved' ? ' good' : s === 'rejected' ? ' warn' : ''), text: s.replace('_', ' ') });
+  }
+
+  var openProfile = guard(async function (id) {
+    var out = await api('/v1/admin/dietitians/' + encodeURIComponent(id));
+    drawProfile(out.profile);
+  });
+
+  function drawProfile(p) {
+    var card = $('profileCard');
+    var kids = [
+      el('div', { class: 'row', style: 'justify-content:space-between' }, [
+        el('h2', { text: p.displayName || '(no name)' }),
+        statusTag(p.status),
+      ]),
+      el('dl', {}, [
+        el('dt', { text: 'Qualifications' }), el('dd', { text: p.credentials || '-' }),
+        el('dt', { text: 'Years of practice' }), el('dd', { text: p.yearsOfPractice === null ? '-' : String(p.yearsOfPractice) }),
+        el('dt', { text: 'Works with' }), el('dd', { text: list(p.specialties) }),
+        el('dt', { text: 'Languages' }), el('dd', { text: list(p.languages) }),
+        el('dt', { text: 'Countries' }), el('dd', { text: list(p.countries) }),
+        el('dt', { text: 'Cities' }), el('dd', { text: list(p.cities) }),
+        el('dt', { text: 'Price bands' }), el('dd', { text: list(p.bandIds) }),
+        el('dt', { text: 'Sent for review' }), el('dd', { text: when(p.submittedAt) }),
+        el('dt', { text: 'Last decided' }), el('dd', { text: when(p.reviewedAt) }),
+        el('dt', { text: 'Account' }), el('dd', { text: p.userId }),
+      ]),
+    ];
+    if (p.bio) kids.push(el('div', {}, [el('h3', { text: 'About her, in her words' }), el('div', { class: 'note', text: p.bio })]));
+    if (p.reviewNote) {
+      kids.push(el('div', {}, [
+        el('h3', { text: 'The last note she was sent' }),
+        el('div', { class: 'note', text: p.reviewNote }),
+        p.reviewOutcome ? el('p', { class: 'muted', text: 'Recorded as: ' + p.reviewOutcome.replace('_', ' ') }) : null,
+      ]));
+    }
+
+    kids.push(el('h3', { text: 'Her documents' }));
+    if (!p.documents.length) kids.push(el('p', { class: 'muted', text: 'She has not uploaded anything.' }));
+    kids.push(el('div', { class: 'docs' }, p.documents.map(function (d) { return drawDoc(p, d); })));
+
+    kids.push(el('h3', { text: 'Your decision' }));
+    if (!p.actions.length) {
+      kids.push(el('p', { class: 'muted', text: p.status === 'approved' ? 'She is approved. There is nothing left to decide, and an approval cannot be taken back.' : p.status === 'draft' ? 'She has not sent this yet, so there is nothing to decide.' : 'Nothing to decide until she sends it again.' }));
+    } else {
+      kids.push(el('p', { class: 'muted', text: 'Only the decisions this application can actually take are shown. A red border means it cannot be undone.' }));
+      p.actions.forEach(function (a) { kids.push(drawAction(p, a)); });
+    }
+    fill(card, kids);
+    card.hidden = false;
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  var DOC_KINDS = { license: 'Licence', certificate: 'Certificate', government_id: 'Government ID' };
+
+  function drawDoc(p, d) {
+    var kids = [el('div', { class: 'row', style: 'justify-content:space-between' }, [
+      el('strong', { text: DOC_KINDS[d.kind] || d.kind }),
+      el('span', { class: 'muted', text: (d.mime || 'unknown type') + ' - ' + kb(d.bytes) + ' - uploaded ' + when(d.uploadedAt) }),
+    ])];
+    if (d.removed) {
+      kids.push(el('p', { class: 'muted', text: 'Deleted. The bytes are gone and cannot be fetched again.' }));
+      return el('div', { class: 'doc' }, kids);
+    }
+    if (d.flaggedForDeletion) {
+      kids.push(el('p', {}, [el('span', { class: 'tag warn', text: 'Being deleted' }), ' ', el('span', { class: 'muted', text: 'Scheduled for ' + when(d.deleteAfter) + '. Look at it before then.' })]));
+    }
+    // A document someone else stored (a bare reference, no bytes here) has nothing for us to show.
+    if (!d.mime && d.bytes === null) {
+      kids.push(el('p', { class: 'muted', text: 'Held somewhere else. Saathi did not store these bytes, so there is nothing to open here.' }));
+      return el('div', { class: 'doc' }, kids);
+    }
+    var holder = el('div', {});
+    var path = '/v1/admin/dietitians/' + encodeURIComponent(p.id) + '/documents/' + encodeURIComponent(d.id) + '/file';
+    var isImage = (d.mime || '').indexOf('image/') === 0;
+    kids.push(el('div', { class: 'row' }, [
+      el('button', { type: 'button', class: 'quiet', text: isImage ? 'Show it' : 'Save it to open it', on: { click: guard(function () { return isImage ? showImage(path, holder) : saveFile(path, d); }) } }),
+      isImage ? null : el('span', { class: 'muted', text: 'This page is not allowed to open a PDF inside itself, so it saves it instead.' }),
+    ]));
+    kids.push(holder);
+    return el('div', { class: 'doc' }, kids);
+  }
+
+  async function bytesOf(path) {
+    var r = await request(path);
+    if (!r.ok) throw await failure(r);
+    return r.blob();
+  }
+
+  /**
+   * Images are shown as a data: URL. The bytes need an Authorization header, which an <img src> cannot
+   * send, so they are fetched first and handed to the <img> inline: the page's content policy allows
+   * data: images, and nothing about the policy has to be loosened.
+   */
+  async function showImage(path, holder) {
+    var blob = await bytesOf(path);
+    var url = await new Promise(function (ok, bad) {
+      var fr = new FileReader();
+      fr.onload = function () { ok(fr.result); };
+      fr.onerror = function () { bad(new Error('Could not read that document')); };
+      fr.readAsDataURL(blob);
+    });
+    fill(holder, [el('img', { src: url, alt: 'The document she uploaded' })]);
+  }
+
+  /** A PDF cannot be embedded under this policy, so it is saved and opened by whatever reads PDFs. */
+  async function saveFile(path, d) {
+    var blob = await bytesOf(path);
+    var url = URL.createObjectURL(blob);
+    var a = el('a', { href: url, download: 'saathi-' + d.kind + '-' + d.id + (d.mime === 'application/pdf' ? '.pdf' : '') });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+  }
+
+  function drawAction(p, a) {
+    var note = el('textarea', { maxlength: '1000', placeholder: 'She reads this exactly as you write it' });
+    var kids = [
+      el('h3', {}, [a.label, a.irreversible ? el('span', { class: 'tag warn', text: 'Cannot be undone' }) : null]),
+      el('p', { text: a.effect }),
+    ];
+    if (a.deletesGovernmentId && !a.irreversible) kids.push(el('p', {}, [el('span', { class: 'tag warn', text: 'Starts deleting her ID' })]));
+    if (a.noteRequired || a.action === 'approve') {
+      kids.push(el('div', {}, [el('label', { text: a.noteRequired ? 'Your note to her (she is owed one)' : 'Your note to her (optional)' }), note]));
+    }
+    var send = function () {
+      var text = note.value.trim();
+      if (a.noteRequired && text.length < 4) throw new Error('Write her a note first. She is owed a reason.');
+      var body = { decision: a.decision };
+      if (a.outcome) body.outcome = a.outcome;
+      if (text) body.note = text;
+      return api('/v1/admin/dietitians/' + encodeURIComponent(p.id) + '/review', { method: 'POST', body: body }).then(function (out) {
+        say(a.label + ': done.', false);
+        drawProfile(out.profile);
+        loaders.queue();
+      });
+    };
+    if (a.irreversible || a.deletesGovernmentId) {
+      kids.push(guarded(a.label, 'I have read what this does to her and I want to do it.', a.irreversible, send));
+    } else {
+      kids.push(el('button', { type: 'button', class: 'quiet', text: a.label, on: { click: guard(send) } }));
+    }
+    return el('div', { class: 'decision' + (a.irreversible ? ' irreversible' : '') }, kids);
+  }
+
+  // ---------- website forms ----------
+  loaders.forms = guard(async function () {
+    var kind = $('leadKind').value;
+    var out = await api('/v1/admin/leads' + (kind ? '?kind=' + encodeURIComponent(kind) : ''));
+    var rows = out.leads || [];
+    if (!rows.length) { fill($('leadList'), [el('p', { class: 'muted', text: 'Nobody has filled in that form yet.' })]); return; }
+    var head = el('thead', {}, [el('tr', {}, ['Email', 'Name', 'Form', 'Platform', 'Registration', 'Note', 'When'].map(function (h) { return el('th', { text: h }); }))]);
+    var body = el('tbody', {}, rows.map(function (l) {
+      return el('tr', {}, [
+        el('td', {}, [el('a', { href: 'mailto:' + encodeURIComponent(l.email), text: l.email })]),
+        el('td', { text: l.name || '-' }),
+        el('td', { text: l.kind === 'pro_application' ? 'Saathi Pro' : 'Launch list' }),
+        el('td', { text: l.platform || '-' }),
+        el('td', { text: l.registration || '-' }),
+        el('td', { text: l.note || '-' }),
+        el('td', { text: when(l.createdAt) }),
+      ]);
+    }));
+    fill($('leadList'), [el('p', { class: 'muted', text: rows.length + ' in all.' }), el('table', {}, [head, body])]);
+  });
+  $('leadsReload').addEventListener('click', function () { loaders.forms(); });
+  $('leadKind').addEventListener('change', function () { loaders.forms(); });
+
+  // ---------- packages ----------
+  loaders.packages = guard(async function () {
+    var out = await api('/v1/admin/packages');
+    var rows = out.packages || [];
+    var head = el('thead', {}, [el('tr', {}, ['Key', 'Kind', 'Label', 'Band', 'Variants', 'Active', ''].map(function (h) { return el('th', { text: h }); }))]);
+    var body = el('tbody', {}, rows.map(function (pkg) {
+      return el('tr', {}, [
+        el('td', { text: pkg.key }),
+        el('td', { text: pkg.kind }),
+        el('td', { text: pkg.label }),
+        el('td', { text: pkg.bandId || '-' }),
+        el('td', { text: (pkg.variants || []).map(function (v) { return v.variant; }).join(', ') || '-' }),
+        el('td', {}, [el('span', { class: 'tag' + (pkg.active ? ' good' : ' warn'), text: pkg.active ? 'yes' : 'no' })]),
+        el('td', {}, [el('button', { type: 'button', class: 'quiet', text: 'Edit', on: { click: function () { editPackage(pkg); } } })]),
+      ]);
+    }));
+    fill($('packageList'), rows.length ? [el('table', {}, [head, body])] : [el('p', { class: 'muted', text: 'No packages yet. Run the seed, or make one here.' })]);
+  });
+  $('packagesReload').addEventListener('click', function () { $('packageEditor').hidden = true; loaders.packages(); });
+
+  var BLANK_PACKAGE = {
+    key: 'band_new', kind: 'dietitian_plan', label: 'New band', bandId: 'band_new', active: true, sortOrder: 0,
+    variants: [{ variant: 'full', productId: 'saathi_band_new_full', prices: [{ country: 'PK', currency: 'PKR', amountMinor: 250000 }] }],
+  };
+  $('packageNew').addEventListener('click', function () { editPackage(null); });
+
+  /** The fields the server's schema accepts, so a saved package does not carry _id or timestamps back. */
+  function stripped(pkg) {
+    var out = { key: pkg.key, kind: pkg.kind, label: pkg.label, active: pkg.active !== false, sortOrder: pkg.sortOrder || 0 };
+    if (pkg.kind === 'dietitian_plan') out.bandId = pkg.bandId;
+    if (pkg.kind === 'premium') {
+      out.trialDays = pkg.trialDays || 0;
+      // What the package opens is held here, not in the app, so it has to go back exactly as it came.
+      out.tier = pkg.tier || 'premium';
+      out.features = pkg.features || [];
+      out.perks = pkg.perks || [];
+    }
+    out.variants = (pkg.variants || []).map(function (v) {
+      return {
+        variant: v.variant, productId: v.productId,
+        prices: (v.prices || []).map(function (x) { return { country: x.country, currency: x.currency, amountMinor: x.amountMinor }; }),
+      };
+    });
+    return out;
+  }
+
+  function editPackage(pkg) {
+    var card = $('packageEditor');
+    var isNew = !pkg;
+    var text = el('textarea', { class: 'code', spellcheck: 'false' });
+    text.value = JSON.stringify(isNew ? BLANK_PACKAGE : stripped(pkg), null, 2);
+    var kids = [
+      el('h2', { text: isNew ? 'New package' : 'Editing ' + pkg.key }),
+      el('p', { class: 'muted', text: 'The server checks this against its own schema and says plainly what is wrong. A dietitian_plan needs a bandId and a "full" variant. A premium package needs a monthly or yearly variant, and its tier, features and perks are what decide which parts of the app it opens.' }),
+      el('div', {}, [el('label', { text: 'The package' }), text]),
+    ];
+    var save = function () {
+      var parsed;
+      try { parsed = JSON.parse(text.value); } catch (e) { throw new Error('That is not valid JSON: ' + e.message); }
+      var path = isNew ? '/v1/admin/packages' : '/v1/admin/packages/' + encodeURIComponent(pkg._id);
+      return api(path, { method: isNew ? 'POST' : 'PUT', body: parsed }).then(function () {
+        say(isNew ? 'Package created.' : 'Package saved.', false);
+        card.hidden = true;
+        loaders.packages();
+      });
+    };
+    kids.push(el('div', { class: 'row' }, [
+      el('button', { type: 'button', text: isNew ? 'Create' : 'Save', on: { click: guard(save) } }),
+      el('button', { type: 'button', class: 'quiet', text: 'Close', on: { click: function () { card.hidden = true; } } }),
+    ]));
+    if (!isNew && pkg.kind === 'dietitian_plan') {
+      kids.push(el('div', { class: 'decision' }, [
+        el('h3', {}, ['Recalculate prices', el('span', { class: 'tag warn', text: 'Overwrites prices' })]),
+        el('p', { text: 'Replaces the premium and follow-up prices of this band with the full price less the current discounts. Whatever those two hold now is lost.' }),
+        guarded('Recalculate from the full price', 'I understand the premium and follow-up prices of this band will be overwritten.', false, function () {
+          return api('/v1/admin/packages/' + encodeURIComponent(pkg._id) + '/derive-variants', { method: 'POST' }).then(function () {
+            say('Prices recalculated.', false);
+            card.hidden = true;
+            loaders.packages();
+          });
+        }),
+      ]));
+    }
+    if (!isNew) {
+      kids.push(el('div', { class: 'decision irreversible' }, [
+        el('h3', {}, ['Delete this package', el('span', { class: 'tag warn', text: 'Cannot be undone' })]),
+        el('p', { text: 'The package is gone and the app stops offering it. Orders already paid for keep their own copy of the price, so nothing in the past changes. Turning "active" off instead hides it and can be undone.' }),
+        guarded('Delete ' + pkg.key, 'I understand this package cannot be brought back.', true, function () {
+          return api('/v1/admin/packages/' + encodeURIComponent(pkg._id), { method: 'DELETE' }).then(function () {
+            say('Package deleted.', false);
+            card.hidden = true;
+            loaders.packages();
+          });
+        }),
+      ]));
+    }
+    fill(card, kids);
+    card.hidden = false;
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ---------- fees ----------
+  loaders.fees = guard(async function () {
+    var out = await api('/v1/admin/fee-config');
+    fill($('feeFields'), FEE_FIELDS.map(function (f) {
+      return el('div', {}, [
+        el('label', { for: 'fee_' + f[0], text: f[1] }),
+        el('input', { type: 'number', step: 'any', min: '0', id: 'fee_' + f[0], value: String(out.feeConfig[f[0]]) }),
+      ]);
+    }));
+  });
+
+  $('feeForm').addEventListener('submit', guard(function (ev) {
+    ev.preventDefault();
+    var body = {};
+    FEE_FIELDS.forEach(function (f) {
+      var v = Number($('fee_' + f[0]).value);
+      if (!isFinite(v) || v < 0) throw new Error(f[1] + ' must be a number, zero or more.');
+      body[f[0]] = f[0].indexOf('Hours') > 0 ? Math.round(v) : v;
+    });
+    return api('/v1/admin/fee-config', { method: 'PUT', body: body }).then(function () {
+      say('Fees saved. The app sees them on its next fetch.', false);
+      loaders.fees();
+    });
+  }));
+
+  signedOut('');
+})();
+</script>
+</body>
+</html>

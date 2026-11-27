@@ -1,4 +1,3 @@
-import compression from 'compression';
 import express, { type Express, type RequestHandler } from 'express';
 import helmet from 'helmet';
 import fs from 'node:fs';
@@ -42,6 +41,12 @@ export const securityHeaders: RequestHandler = (req, res, next) => {
 
 /** Pages are checked again after five minutes so a deploy shows quickly; images and other files are kept for a day. */
 function cacheFor(res: express.Response, file: string): void {
+  // The admin shell holds no data, but it is not a page to cache at a proxy or offer to a crawler.
+  if (file.includes(`${path.sep}admin${path.sep}`)) {
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Robots-Tag', 'noindex');
+    return;
+  }
   res.setHeader('Cache-Control', file.endsWith('.html') ? 'public, max-age=300' : 'public, max-age=86400');
 }
 
@@ -70,7 +75,6 @@ export function mountSite(app: Express, opts: { production: boolean; host?: stri
     res.redirect(301, (wrongHost ? `https://${opts.host}` : '') + target + query);
   });
 
-  app.use(compression());
   app.use(express.static(SITE_DIR, { extensions: ['html'], dotfiles: 'ignore', setHeaders: cacheFor }));
 
   // A page that does not exist gets the site's own 404; anything else falls through to the JSON one.

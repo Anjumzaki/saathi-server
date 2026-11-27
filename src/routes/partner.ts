@@ -11,6 +11,7 @@ import {
   previewWindowFor,
   type PartnerAccess,
 } from '../services/partnerLogic';
+import { livePush, type PushService } from '../services/push';
 import { serializePartnerView, type PartnerSnapshot } from '../services/serializers';
 import { addRole } from '../services/users';
 import { randomToken, sha256 } from '../utils/crypto';
@@ -39,8 +40,8 @@ const summarySchema = z.object({
   steps: z.number().int().min(0).max(200000),
   walkDone: z.boolean(),
   togetherTonight: z.boolean().default(false),
-  weightKg: z.number().min(2).max(400).nullable().default(null),
-  weightGoalKg: z.number().min(2).max(400).nullable().default(null),
+  weightKg: z.number().min(30).max(400).nullable().default(null),
+  weightGoalKg: z.number().min(30).max(400).nullable().default(null),
 }).strict();
 
 /**
@@ -161,7 +162,11 @@ async function requireOwnerMaySend(userId: string): Promise<void> {
   if (!(await viewerHasPackage(userId, new Date()))) throw paymentRequired('Sharing your day needs a package');
 }
 
-export function partnerRoutes(): Router {
+export interface PartnerDeps { push: PushService }
+
+export function partnerRoutes(overrides: Partial<PartnerDeps> = {}): Router {
+  // livePush() is only reached when nothing is injected, so a test never builds the real service.
+  const d: PartnerDeps = { push: overrides.push ?? livePush(), ...overrides };
   const r = Router();
 
   // Owner: the phone's summary of one day, replacing any earlier one for that date.
@@ -281,6 +286,8 @@ export function partnerRoutes(): Router {
     const claimed = await PartnerShare.updateOne({ _id: share._id, $or: [{ lastCheerAt: null }, { lastCheerAt: { $lt: dayStart } }] }, { $set: { lastCheerAt: now } });
     if (claimed.modifiedCount !== 1) throw conflict('You already cheered today', 'cheer_limit');
     await Cheer.create({ shareId: share._id, fromUserId: userId, toUserId: share.ownerId, emoji });
+    // The cheer is for her, so she is the one told. Never who sent it, and never the emoji.
+    d.push.notify(String(share.ownerId), { type: 'partner_cheer' });
     res.status(201).json({ ok: true });
   }));
 

@@ -1,14 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type { Services } from '../interfaces';
-import { Cheer, PartnerShare } from '../models/PartnerShare';
-import { CallBooking } from '../models/CallBooking';
+import { PartnerShare } from '../models/PartnerShare';
 import { DietitianProfile } from '../models/DietitianProfile';
+import { Lead } from '../models/Lead';
 import { Message } from '../models/Message';
 import { Order } from '../models/Order';
 import { Otp } from '../models/Otp';
 import { Plan } from '../models/Plan';
-import { RefreshToken } from '../models/RefreshToken';
 import { SyncRecord } from '../models/SyncRecord';
 import { User } from '../models/User';
 import { displayNameField, emailField, phoneE164, termsVersionField } from '../schemas/common';
@@ -16,9 +15,11 @@ import { codeEmail } from '../services/emailTemplates';
 import { checkOtp, issueOtp } from '../services/otp';
 import { OTP_CONFIG } from '../services/otpLogic';
 import { CURRENT_TERMS_VERSION } from '../services/signupProfile';
-import { emailChangeOtpKey, emailChangeOtpKeyPrefix, emailChangeProblem, serializeUser } from '../services/users';
+import { mongoPurgeOps, purgeAccount } from '../services/accountPurge';
+import { emailChangeOtpKey, emailChangeProblem, serializeUser } from '../services/users';
 import { conflict, notFound, notImplemented } from '../utils/errors';
 import { asyncHandler, authOf, parse } from '../utils/http';
+import { log } from '../utils/logger';
 
 /** Taken from the OTP config so the email can never promise an expiry the server does not honour. */
 const OTP_MINUTES = Math.round(OTP_CONFIG.ttlMs / 60_000);
@@ -154,37 +155,36 @@ export function accountRoutes(services?: Pick<Services, 'mailer'>): Router {
   }));
 
   /**
-   * Account deletion. Orders are financial records and are retained (their parties are anonymised via the user row).
-   * Blocked while an order is still in flight so nobody is left unpaid / unserved.
+   * Account deletion. Everything of hers goes now rather than in thirty days: there is no "restore",
+   * so a grace period would only mean her cycle history sitting on the server for another month. The
+   * purge job runs the same steps on a schedule and is the safety net - for accounts deleted before
+   * this existed, for a row that arrives late, and for a step that fails here.
+   *
+   * Blocked while an order is in flight so nobody is left unpaid or unserved. The order itself is kept
+   * afterwards (the dietitian's record of work delivered, and the figures kept for tax) with nothing of
+   * hers left on it. What survives, and why, is listed in `purgePlan`.
    */
   r.delete('/', asyncHandler(async (req, res) => {
     const { userId } = authOf(req);
     const open = await Order.exists({ $or: [{ clientId: userId }, { dietitianId: userId }], status: { $in: ['paid', 'in_progress', 'delivered'] } });
     if (open) throw conflict('You have an order in progress. Finish or refund it before deleting your account.', 'open_orders');
-    const myShares = await PartnerShare.find({ $or: [{ ownerId: userId }, { partnerId: userId }] }).select('_id');
-    await Promise.all([
-      SyncRecord.deleteMany({ userId }),
-      Plan.deleteMany({ userId }),
-      RefreshToken.deleteMany({ userId }),
-      Otp.deleteMany({ key: { $regex: `^phone:${userId}:` } }),
-      Otp.deleteMany({ key: { $regex: `^${emailChangeOtpKeyPrefix(userId)}` } }),
-      Cheer.deleteMany({ shareId: { $in: myShares.map((s) => s._id) } }),
-      PartnerShare.deleteMany({ _id: { $in: myShares.map((s) => s._id) } }),
-      DietitianProfile.deleteMany({ userId }),
-      CallBooking.deleteMany({ $or: [{ clientId: userId }, { dietitianId: userId }], status: { $ne: 'completed' } }),
-      Message.updateMany({ senderId: userId }, { $set: { text: null, photoRef: null, planUpdate: null } }),
-    ]);
     const u = await User.findById(userId);
     if (u) {
-      await Otp.deleteOne({ key: `email:${u.email}` });
-      await Otp.deleteOne({ key: `reset:${u.email}` });
-      await User.collection.updateOne(
-        { _id: u._id },
-        {
-          $set: { deletedAt: new Date(), roles: [], phoneVerified: false, subscription: { status: 'none' } },
-          $unset: { email: '', displayName: '', phone: '', googleSub: '', appleSub: '', country: '', timezone: '' },
-        },
-      );
+      // Keyed on the address, not on her id, so this is the last moment anything can find them.
+      if (u.email) {
+        await Promise.all([
+          Lead.deleteMany({ email: u.email }),
+          Otp.deleteOne({ key: `email:${u.email}` }),
+          Otp.deleteOne({ key: `reset:${u.email}` }),
+        ]);
+      }
+      // Marked deleted before a single row is touched, so a failure below leaves an account the job finishes.
+      await User.collection.updateOne({ _id: u._id }, { $set: { deletedAt: new Date() } });
+    }
+    try {
+      await purgeAccount(mongoPurgeOps(), userId);
+    } catch (e) {
+      log.error('account deletion did not finish; left for the purge job', { message: e instanceof Error ? e.message : String(e) });
     }
     res.status(204).end();
   }));

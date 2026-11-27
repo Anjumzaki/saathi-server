@@ -6,6 +6,7 @@ import { RefreshToken } from '../models/RefreshToken';
 import { User } from '../models/User';
 import { checkOtp, issueOtp } from '../services/otp';
 import { OTP_CONFIG } from '../services/otpLogic';
+import { createSmsQuota, smsQuotaError } from '../services/sms';
 import { codeEmail, type CodePurpose } from '../services/emailTemplates';
 import { issueTokenPair, revokeRefreshToken, rotateRefreshToken } from '../services/tokens';
 import { ensureAdminRole, serializeUser } from '../services/users';
@@ -29,6 +30,8 @@ const signup = z.object({
 
 export function authRoutes(s: Services): Router {
   const r = Router();
+  // One counter per server process, shared by every account: see services/sms.ts for what that buys.
+  const smsQuota = createSmsQuota();
 
   const sendCode = (to: string, purpose: CodePurpose, c: string) => s.mailer.send({ to, ...codeEmail(purpose, c, OTP_MINUTES) });
 
@@ -46,27 +49,58 @@ export function authRoutes(s: Services): Router {
     return { user: serializeUser(u), tokens, isNewUser };
   }
 
+  /**
+   * Google or Apple has vouched for her. Three ways this can go: a subject we have seen before (sign
+   * her in), a verified address that already has an account (join the two), or neither (make one).
+   *
+   * The subject is what identifies her, not the address. Apple gives the address on the first sign-in
+   * and never again, so a returning woman is found by her subject alone, and `id.email` being absent
+   * means nothing is wrong.
+   */
   async function signInWithIdentity(id: VerifiedIdentity) {
     const subField = id.provider === 'google' ? 'googleSub' : 'appleSub';
+    const email = id.email?.trim().toLowerCase();
+    // Only an address the provider says it has checked may find an existing account. The client's own
+    // idea of her email is never read: a request that could name an address could claim any account.
+    const linkable = email && id.emailVerified ? email : undefined;
     let u = await User.findOne({ [subField]: id.subject });
-    if (!u && id.email && id.emailVerified) {
-      u = await User.findOne({ email: id.email });
-      if (u) {
-        u.set(subField, id.subject);
-        await u.save();
+
+    if (!u && linkable) {
+      const byEmail = await User.findOne({ email: linkable, deletedAt: null });
+      if (byEmail && !byEmail.get(subField)) {
+        /*
+         * Deliberate: a verified Google or Apple address joins the account that already has it, password
+         * and all. Google and Apple hand over an address only once they have checked the mailbox, which
+         * is the same proof an emailed code gives — so this is not a weaker door, it is the same one.
+         * Refusing would leave her locked out of her own data behind a password she came here because she
+         * had forgotten. Her password keeps working, no session elsewhere is disturbed, and nothing about
+         * the account changes beyond gaining a second way in.
+         */
+        byEmail.set(subField, id.subject);
+        byEmail.emailVerifiedAt ??= new Date();
+        if (!byEmail.displayName?.trim() && id.name) byEmail.displayName = id.name;
+        await byEmail.save();
+        u = byEmail;
+      } else if (byEmail) {
+        // That address already has a different provider account against it, which should be impossible
+        // for one person. Refuse rather than quietly move the link to somebody else's sign-in.
+        throw conflict('This email is already set up with a different sign-in. Use your email and password.', 'email_in_use');
       }
     }
+
     const isNew = !u;
     if (!u) {
       u = await User.create({
         [subField]: id.subject,
-        email: id.emailVerified ? id.email : undefined,
-        displayName: id.name,
+        ...(linkable ? { email: linkable } : {}),
+        ...(id.name ? { displayName: id.name } : {}),
         // Google and Apple have already checked the mailbox; re-asking would be theatre.
-        emailVerifiedAt: id.emailVerified ? new Date() : null,
+        emailVerifiedAt: linkable ? new Date() : null,
       });
-    } else if (id.emailVerified && id.email && u.email === id.email) {
-      await markEmailVerified(u);
+    } else {
+      if (linkable && u.email === linkable) await markEmailVerified(u);
+      // Apple says the name once in a lifetime. If we did not have one, take it now or never.
+      if (!u.displayName?.trim() && id.name) { u.displayName = id.name; await u.save(); }
     }
     return finishSignIn(u, isNew);
   }
@@ -210,13 +244,26 @@ export function authRoutes(s: Services): Router {
   }));
 
   // ----- social sign-in -----
+  /**
+   * `nonce` is the one the app put in its own request to the provider, matched against the token's
+   * claim so a token minted for some other request cannot be handed to us instead. `fullName` is only
+   * for Apple's first sign-in, is not proof of anything, and is used only if an account is created.
+   * There is deliberately no `email` field: an unknown key is dropped, and an address from the client
+   * is never a reason to let anybody into an account.
+   */
+  const socialBody = z.object({
+    idToken: z.string().min(1).max(5000),
+    nonce: z.string().min(8).max(256).optional(),
+    fullName: displayNameField.optional(),
+  });
+
   r.post('/google', asyncHandler(async (req, res) => {
-    const { idToken } = parse(z.object({ idToken: z.string().min(1).max(5000) }), req.body);
-    res.json(await signInWithIdentity(await s.googleVerifier.verify(idToken)));
+    const { idToken, nonce } = parse(socialBody, req.body);
+    res.json(await signInWithIdentity(await s.googleVerifier.verify(idToken, { nonce })));
   }));
   r.post('/apple', asyncHandler(async (req, res) => {
-    const { idToken } = parse(z.object({ idToken: z.string().min(1).max(5000) }), req.body);
-    res.json(await signInWithIdentity(await s.appleVerifier.verify(idToken)));
+    const { idToken, nonce, fullName } = parse(socialBody, req.body);
+    res.json(await signInWithIdentity(await s.appleVerifier.verify(idToken, { nonce, fullName })));
   }));
 
   // ----- tokens -----
@@ -234,12 +281,23 @@ export function authRoutes(s: Services): Router {
     res.json({ ok: true });
   }));
 
-  // ----- lazy phone verification (only when a feature needs it) -----
+  // ----- phone verification (always optional: nothing in Saathi waits for it) -----
+  /**
+   * Order matters here. Whether a text can be sent at all, and whether this number has had too many
+   * already, are both settled BEFORE a code is issued — otherwise a refusal would still burn her code
+   * slot and start the one-minute wait for a text that never went anywhere.
+   */
   r.post('/phone/request', requireAuth, asyncHandler(async (req, res) => {
     const { phone: p } = parse(z.object({ phone }), req.body);
     const { userId } = authOf(req);
+    if (!s.sms.available) {
+      throw new ApiError(503, 'sms_unavailable', 'Confirming your number by text is not available yet. Everything else in Saathi works without it.');
+    }
+    const quota = smsQuota.check(p, userId);
+    if (!quota.allowed) throw smsQuotaError(quota);
     const { code: c, resendAfterSeconds } = await issueOtp(`phone:${userId}:${p}`);
-    await s.sms.send({ to: p, text: `Your Saathi verification code is ${c}. It expires in 10 minutes.` });
+    smsQuota.record(p, userId);
+    await s.sms.send({ to: p, text: `Your Saathi verification code is ${c}. It expires in ${OTP_MINUTES} minutes.` });
     res.json({ ok: true, resendAfterSeconds });
   }));
   r.post('/phone/verify', requireAuth, asyncHandler(async (req, res) => {
@@ -248,6 +306,8 @@ export function authRoutes(s: Services): Router {
     await checkOtp(`phone:${userId}:${p}`, c);
     const u = await User.findById(userId);
     if (!u) throw unauthorized();
+    // No check for the number being on another account, on purpose: a shared family number is ordinary,
+    // and answering differently for a number that is already known would say so to anyone who asked.
     u.phone = p;
     u.phoneVerified = true;
     await u.save();

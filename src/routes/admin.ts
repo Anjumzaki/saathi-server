@@ -7,13 +7,19 @@ import { DietitianProfile } from '../models/DietitianProfile';
 import { LEAD_KINDS, Lead } from '../models/Lead';
 import { Order } from '../models/Order';
 import { FeeConfigModel, PackageConfig } from '../models/PackageConfig';
+import { PLUS_FEATURES } from '../services/entitlement';
 import { applyDiscount } from '../services/money';
-import { getFeeConfig, invalidateFeeConfig, invalidatePackages } from '../services/feeConfig';
+import { mongoPurgeOps, purgeDeletedAccounts } from '../services/accountPurge';
+import { invalidateConfigCaches } from '../services/adminConfigCache';
+import { REVIEW_DECISIONS, adminProfileView, documentBlockMessage, pickAdminDocument, purgeTargets, reviewPatch } from '../services/adminReview';
+import { getFeeConfig } from '../services/feeConfig';
+import { getFileStore } from '../services/fileStore';
 import { canRelease, isRefundEligible } from '../services/orderState';
-import { canVerificationTransition, flagDocsAfterReview } from '../services/verification';
+import { VERIFICATION_STATUSES, canVerificationTransition, flagDocsAfterReview } from '../services/verification';
 import { addRole } from '../services/users';
-import { conflict, notFound } from '../utils/errors';
+import { badRequest, conflict, notFound } from '../utils/errors';
 import { asyncHandler, authOf, objectId, parse } from '../utils/http';
+import { log } from '../utils/logger';
 import { refundOrder } from './orders';
 
 const pricePoint = z.object({ country: z.string().min(1).max(2), currency: z.string().length(3).toUpperCase(), amountMinor: z.number().int().min(0) });
@@ -34,6 +40,14 @@ const packageSchema = z.discriminatedUnion('kind', [
   packageBase.extend({
     kind: z.literal('premium'),
     trialDays: z.number().int().min(0).max(365).default(30),
+    /**
+     * What the package is and what it opens. Optional, and left alone when it is not sent, so an edit
+     * that only moves a price cannot quietly demote Premium Plus or empty its feature list.
+     */
+    tier: z.enum(['premium', 'plus']).optional(),
+    features: z.array(z.string().max(60)).max(50).optional()
+      .refine((fs) => !fs || fs.every((f) => (PLUS_FEATURES as string[]).includes(f)), { message: `Unknown feature. The ones that exist: ${PLUS_FEATURES.join(', ')}` }),
+    perks: z.array(z.string().min(1).max(200)).max(20).optional(),
     variants: z.array(variant.extend({ variant: z.enum(['monthly', 'yearly']) })).min(1).max(2),
   }),
 ]);
@@ -58,7 +72,7 @@ export function adminRoutes(s: Services): Router {
   r.put('/fee-config', asyncHandler(async (req, res) => {
     const body = parse(feeSchema.partial().strict(), req.body);
     await FeeConfigModel.findOneAndUpdate({ key: 'default' }, { $set: body, $setOnInsert: { key: 'default' } }, { upsert: true });
-    invalidateFeeConfig();
+    invalidateConfigCaches();
     res.json({ feeConfig: await getFeeConfig() });
   }));
 
@@ -70,21 +84,21 @@ export function adminRoutes(s: Services): Router {
     const body = parse(packageSchema, req.body);
     if (await PackageConfig.exists({ key: body.key })) throw conflict('Package key already exists');
     const p = await PackageConfig.create(body);
-    invalidatePackages();
+    invalidateConfigCaches();
     res.status(201).json({ package: p });
   }));
   r.put('/packages/:id', asyncHandler(async (req, res) => {
     const body = parse(packageSchema, req.body);
     const p = await PackageConfig.findByIdAndUpdate(objectId(req.params['id']), { $set: body }, { new: true });
     if (!p) throw notFound();
-    invalidatePackages();
+    invalidateConfigCaches();
     res.json({ package: p });
   }));
   r.delete('/packages/:id', asyncHandler(async (req, res) => {
     // Orders keep their own price snapshot, so deleting a package never changes history.
     const p = await PackageConfig.findByIdAndDelete(objectId(req.params['id']));
     if (!p) throw notFound();
-    invalidatePackages();
+    invalidateConfigCaches();
     res.status(204).end();
   }));
   /** Recompute premium and followUp prices of a dietitian_plan band from its `full` prices and the current discount %. */
@@ -100,48 +114,107 @@ export function adminRoutes(s: Services): Router {
     };
     p.set('variants', [full, derive('premium', fees.premiumDiscountPercent), derive('followUp', fees.followUpDiscountPercent)]);
     await p.save();
-    invalidatePackages();
+    invalidateConfigCaches();
     res.json({ package: p });
   }));
 
   // ----- dietitian verification -----
+  // The queue. `status` takes one or several ("submitted,in_review"), oldest submission first: she has waited longest.
   r.get('/dietitians', asyncHandler(async (req, res) => {
-    const { status } = parse(z.object({ status: z.enum(['draft', 'submitted', 'in_review', 'approved', 'rejected']).optional() }), req.query);
-    res.json({ profiles: await DietitianProfile.find(status ? { status } : {}).sort({ submittedAt: 1 }).limit(200).lean() });
+    const { status } = parse(z.object({ status: z.string().max(100).optional() }), req.query);
+    const wanted = (status ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+    const unknown = wanted.filter((x) => !(VERIFICATION_STATUSES as readonly string[]).includes(x));
+    if (unknown.length) throw badRequest(`Unknown status: ${unknown.join(', ')}`);
+    const profiles = await DietitianProfile.find(wanted.length ? { status: { $in: wanted } } : {}).sort({ submittedAt: 1 }).limit(200).lean();
+    res.json({ profiles: profiles.map((p) => adminProfileView(p as never)) });
+  }));
+
+  /** One application in full, with the decisions this status actually allows. */
+  r.get('/dietitians/:id', asyncHandler(async (req, res) => {
+    const p = await DietitianProfile.findById(objectId(req.params['id'])).lean();
+    if (!p) throw notFound();
+    res.json({ profile: adminProfileView(p as never) });
+  }));
+
+  /**
+   * A document's bytes, for the reviewer who has to look at the licence. The admin equivalent of
+   * GET /v1/dietitians/me/documents/:docId/file and held to the same rule: the key must belong to the
+   * scope of the account that owns the application, and it is reached by document id, never by key.
+   */
+  r.get('/dietitians/:id/documents/:docId/file', asyncHandler(async (req, res) => {
+    const p = await DietitianProfile.findById(objectId(req.params['id'])).lean();
+    if (!p) throw notFound();
+    const pick = pickAdminDocument(p as never, String(req.params['docId']));
+    if (!pick.ok) throw notFound(documentBlockMessage(pick.reason));
+    const file = await getFileStore().get(pick.ref);
+    if (!file) throw notFound('That document is no longer here');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Content-Disposition', 'inline');
+    res.type(file.mime).send(file.data);
   }));
   r.post('/dietitians/:id/review', asyncHandler(async (req, res) => {
-    const body = parse(z.object({ decision: z.enum(['in_review', 'approved', 'rejected']), note: z.string().max(1000).optional() }), req.body);
+    const body = parse(z.object({ decision: z.enum(REVIEW_DECISIONS), note: z.string().max(1000).optional(), outcome: z.enum(['changes_requested', 'declined']).optional() }), req.body);
     const p = await DietitianProfile.findById(objectId(req.params['id']));
     if (!p) throw notFound();
     if (!canVerificationTransition(p.status, body.decision)) throw conflict(`Cannot move ${p.status} -> ${body.decision}`, 'invalid_transition');
-    const now = new Date();
-    p.status = body.decision;
-    p.reviewNote = body.note;
-    if (body.decision !== 'in_review') {
-      p.reviewedAt = now;
+    const patch = reviewPatch(body, new Date());
+    p.status = patch.status;
+    p.reviewNote = patch.reviewNote;
+    p.reviewOutcome = patch.reviewOutcome;
+    if (patch.reviewedAt) {
+      p.reviewedAt = patch.reviewedAt;
       p.reviewedBy = authOf(req).userId as never;
-      p.set('documents', flagDocsAfterReview(p.documents.map((d) => d.toObject()), now));
     }
+    if (patch.flagDocuments) p.set('documents', flagDocsAfterReview(p.documents.map((d) => d.toObject()), patch.reviewedAt ?? new Date()));
     await p.save();
-    if (body.decision === 'approved') await addRole(String(p.userId), 'dietitian');
-    res.json({ profile: p });
+    if (patch.grantsDietitianRole) await addRole(String(p.userId), 'dietitian');
+    res.json({ profile: adminProfileView(p.toObject() as never) });
   }));
-  /** Marks flagged documents as purged (the storage layer deletes the underlying object; this service keeps references only). */
+  /**
+   * Deletes a document whose retention window has run out: the stored object goes first, then the
+   * reference is marked purged. The bytes are deleted before the record, so a failure half way through
+   * leaves a record that is tried again rather than a file nothing points at any more.
+   */
   r.post('/jobs/purge-flagged-documents', asyncHandler(async (_req, res) => {
     const now = new Date();
     const profiles = await DietitianProfile.find({ 'documents.flaggedForDeletion': true });
     let purged = 0;
+    let kept = 0;
     for (const p of profiles) {
-      for (const d of p.documents) {
-        if (d.flaggedForDeletion && !d.deletedAt && d.deleteAfter && d.deleteAfter <= now) {
-          d.deletedAt = now;
-          d.ref = 'purged';
-          purged++;
+      for (const target of purgeTargets(p as never, now)) {
+        if (target.ref) {
+          try {
+            await getFileStore().remove(target.ref);
+          } catch (e) {
+            // Leave the record alone: the next run tries again rather than losing the only reference to it.
+            kept++;
+            log.error('purge failed', { documentId: target.id, message: e instanceof Error ? e.message : String(e) });
+            continue;
+          }
         }
+        const d = p.documents.find((x) => String(x._id) === target.id);
+        if (!d) continue;
+        d.deletedAt = now;
+        d.ref = 'purged';
+        purged++;
       }
       await p.save();
     }
-    res.json({ purged });
+    res.json({ purged, kept });
+  }));
+
+  /**
+   * Erases accounts whose thirty days are up. `DELETE /me` already runs these steps at the moment she
+   * asks, so on a healthy server this finds nothing; it exists for the accounts deleted before that was
+   * true, for a row that arrived after she left, and for a step that failed the first time.
+   *
+   * Every step is a filter plus an operation, so a run that dies half way is simply run again, and the
+   * counts come back per collection rather than as one number: a step that keeps returning rows is the
+   * signal that something is being missed.
+   */
+  r.post('/jobs/purge-deleted-accounts', asyncHandler(async (req, res) => {
+    const { limit } = parse(z.object({ limit: z.number().int().min(1).max(1000).default(200) }).strict(), req.body ?? {});
+    res.json(await purgeDeletedAccounts(mongoPurgeOps(), { limit }));
   }));
 
   // ----- scheduled settlement (call from Heroku Scheduler) -----

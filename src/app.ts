@@ -7,6 +7,8 @@ import { errorHandler, notFoundHandler } from './middleware/error';
 import { apiLimiter, authLimiter } from './middleware/rateLimit';
 import { mountSite, securityHeaders } from './middleware/site';
 import { accountRoutes } from './routes/account';
+import { threadRoutes } from './routes/threads';
+import { liveStoreHooks } from './routes/storeHooks';
 import { adminRoutes } from './routes/admin';
 import { authRoutes } from './routes/auth';
 import { datasetRoutes } from './routes/datasets';
@@ -14,6 +16,7 @@ import { dietitianRoutes } from './routes/dietitians';
 import { orderRoutes } from './routes/orders';
 import { partnerRoutes } from './routes/partner';
 import { planRoutes } from './routes/plans';
+import { pushRoutes } from './routes/push';
 import { regionRoutes } from './routes/region';
 import { siteRoutes } from './routes/site';
 import { packagesRoutes, subscriptionRoutes } from './routes/subscription';
@@ -51,14 +54,21 @@ export function createApp(services: Services): Express {
   v1.use('/region', regionRoutes());
   v1.use('/packages', packagesRoutes());
   v1.use('/site', siteRoutes());
+  // A licence or ID arrives as base64, which the global 1 MB JSON limit would cut off.
+  v1.use('/dietitians/me/documents', express.json({ limit: '12mb' }));
   v1.use('/dietitians', (req, res, next) => (req.method === 'GET' && (req.path === '/' || /^\/[a-f0-9]{24}$/.test(req.path)) ? next() : requireAuth(req, res, next)), dietitianRoutes());
-  v1.use('/me', requireAuth, accountRoutes());
+  v1.use('/me', requireAuth, accountRoutes(services));
   v1.use('/sync', requireAuth, syncRoutes());
   v1.use('/subscription', requireAuth, subscriptionRoutes(services));
   v1.use('/plans', requireAuth, planRoutes(services));
   v1.use('/orders', requireAuth, orderRoutes(services));
+  v1.use('/threads', requireAuth, threadRoutes());
   v1.use('/partner', requireAuth, partnerRoutes());
+  v1.use('/push', requireAuth, pushRoutes());
   v1.use('/admin', requireAuth, requireRole('admin'), adminRoutes(services));
+  // Google and Apple tell us a purchase changed. Called by them, not by her phone: no auth, no limiter.
+  // Each callback proves who is calling (a Pub/Sub OIDC token, Apple's signature) or refuses.
+  app.use('/v1/store', liveStoreHooks());
   app.use('/v1', v1);
 
   // The marketing website shares this app (saathi-app.com); the API stays under /v1.

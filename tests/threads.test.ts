@@ -157,6 +157,7 @@ describe('sending and paging', () => {
     const first = await call('GET', `/v1/threads/${id}/messages?limit=3`, tok(HER));
     expect(first.body.messages.map((m: { text: string }) => m.text)).toEqual(['m5', 'm6', 'm7']);
     expect(first.body.hasMore).toBe(true);
+    expect(first.body.messages.every((m: { mine: boolean }) => m.mine)).toBe(true);
     const older = await call('GET', `/v1/threads/${id}/messages?limit=3&before=${first.body.messages[0].createdAt}`, tok(HER));
     expect(older.body.messages.map((m: { text: string }) => m.text)).toEqual(['m2', 'm3', 'm4']);
     const oldest = await call('GET', `/v1/threads/${id}/messages?limit=3&before=${older.body.messages[0].createdAt}`, tok(HER));
@@ -168,6 +169,7 @@ describe('sending and paging', () => {
     await call('POST', `/v1/threads/${id}/messages`, tok(DIETITIAN), { text: 'how are you sleeping?' });
     const fresh = await call('GET', `/v1/threads/${id}/messages?since=${since}`, tok(HER));
     expect(fresh.body.messages.map((m: { text: string }) => m.text)).toEqual(['how are you sleeping?']);
+    expect(fresh.body.messages[0].mine).toBe(false); // hers vs the dietitian's, decided by the server
   });
 });
 

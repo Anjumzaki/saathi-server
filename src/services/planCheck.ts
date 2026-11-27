@@ -34,7 +34,7 @@ export interface CheckConfig {
 }
 
 export const DEFAULT_PROTEIN_KEYWORDS = [
-  'egg', 'chicken', 'fish', 'meat', 'mutton', 'beef', 'paneer', 'tofu', 'dal', 'lentil', 'chickpea',
+  'egg', 'chicken', 'fish', 'meat', 'mutton', 'beef', 'paneer', 'tofu', 'dal', 'daal', 'dahl', 'lentil', 'chickpea',
   'chana', 'beans', 'yogurt', 'yoghurt', 'curd', 'dahi', 'milk', 'cheese', 'whey', 'protein', 'tuna',
   'salmon', 'turkey', 'soy', 'tempeh', 'nuts', 'hummus',
 ];

@@ -101,6 +101,8 @@ export interface ThreadStore {
   addMessage(m: NewMessage): Promise<MessageRecord>;
   unreadFor(t: ThreadRecord, side: ThreadSide): Promise<number>;
   calls(threadId: string): Promise<CallRecord[]>;
+  /** Every call on either side of her threads: what the "your calls" screen reads in one go. */
+  callsFor(userId: string): Promise<CallRecord[]>;
   callById(id: string): Promise<CallRecord | null>;
   addCall(c: NewCall): Promise<CallRecord>;
   patchCall(id: string, patch: CallPatch): Promise<CallRecord | null>;
@@ -245,6 +247,10 @@ export const mongoThreadStore: ThreadStore = {
     const ds = await CallBooking.find({ threadId }).sort({ slotStart: 1 }).lean();
     return ds.map((d) => toCall(d as Doc));
   },
+  async callsFor(userId) {
+    const ds = await CallBooking.find({ $or: [{ clientId: userId }, { dietitianId: userId }], threadId: { $ne: null } }).sort({ slotStart: 1 }).lean();
+    return ds.map((d) => toCall(d as Doc));
+  },
   async callById(id) {
     const d = await CallBooking.findById(id).lean();
     return d ? toCall(d as Doc) : null;
@@ -351,6 +357,9 @@ export function createMemoryThreadStore(): ThreadStore & { reset(): void } {
     },
     async calls(threadId) {
       return calls.filter((c) => c.threadId === threadId).sort((a, b) => a.slotStart.getTime() - b.slotStart.getTime());
+    },
+    async callsFor(userId) {
+      return calls.filter((c) => c.clientId === userId || c.dietitianId === userId).sort((a, b) => a.slotStart.getTime() - b.slotStart.getTime());
     },
     async callById(cid) {
       return calls.find((c) => c.id === cid) ?? null;

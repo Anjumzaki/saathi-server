@@ -14,6 +14,9 @@ import { effectiveStatus, isPremiumActive } from '../services/entitlement';
 import { getFeeConfig } from '../services/feeConfig';
 import { computeSettlement } from '../services/money';
 import { canRelease, canTransition, isRefundEligible, refundOpensAt } from '../services/orderState';
+import { reviewPlanForPublish } from '../services/dietitianPublish';
+import { livePush } from '../services/push';
+import { log } from '../utils/logger';
 import { nextVersion, type StoredVersion } from '../services/planVersioning';
 import { chooseVariant, findPrice, type VariantConfig } from '../services/pricing';
 import { serializePlanForDietitian, serializeRecordsForDietitian, type PlanLike, type SyncRecordLike } from '../services/serializers';
@@ -70,10 +73,13 @@ function priceFor(client: ClientLike, pkg: { key: string; label: string; variant
 /** Shared by the client refund route and the settle job. */
 export async function refundOrder(s: Services, order: OrderDoc, reason: string): Promise<void> {
   move(order, 'refunded');
-  if (order.purchaseToken) await s.playBilling.refund({ purchaseToken: order.purchaseToken });
+  if (order.purchaseToken) {
+    await s.playBilling.refund({ purchaseToken: order.purchaseToken, productId: order.productId, orderId: order.playOrderId ?? undefined });
+  }
   order.refundedAt = new Date();
   order.refundReason = reason;
   await order.save();
+  livePush().notify(String(order.clientId), { type: 'subscription', event: 'refunded' });
 }
 
 export function orderRoutes(s: Services): Router {
@@ -148,7 +154,10 @@ export function orderRoutes(s: Services): Router {
     if (!profile) throw notFound('Dietitian not found');
     if (!pkg) throw notFound('Package not found');
     if (!client?.country) throw badRequest('Set your country (PATCH /v1/me) before ordering', { code: 'country_required' });
-    const prior = await Order.exists({ clientId: userId, dietitianId, status: { $in: ['delivered', 'released'] } });
+    const [prior, fees] = await Promise.all([
+      Order.exists({ clientId: userId, dietitianId, status: { $in: ['delivered', 'released'] } }),
+      getFeeConfig(),
+    ]);
     const priced = priceFor(client, pkg as never, !!prior, new Date());
     if (!priced.chosen) throw conflict(`No price configured for ${client.country}`, 'no_price');
     res.json({
@@ -165,6 +174,9 @@ export function orderRoutes(s: Services): Router {
         listAmountMinor: priced.list?.amountMinor ?? priced.chosen.amountMinor,
         subscriptionStatus: priced.status,
         discountHeldForTrial: priced.discountHeldForTrial,
+        // The promises the app makes before she pays, so no screen hard-codes them. No fee percentages here.
+        refundWindowHours: fees.refundWindowHours,
+        payoutDelayHours: fees.payoutDelayHours,
       },
     });
   }));
@@ -196,6 +208,15 @@ export function orderRoutes(s: Services): Router {
     if (v.orderId) order.playOrderId = v.orderId;
     order.settlement = { playFee: st.playFee, net: st.net, platform: st.platform, dietitian: st.dietitian, playFeePercent: fees.playFeePercent, platformFeePercent: fees.platformFeePercent };
     await order.save();
+    // Google refunds an unacknowledged purchase after three days, which is the right outcome if we never
+    // managed to store the order. So this comes after the save, never before it.
+    if (s.playBilling.acknowledge) {
+      try {
+        await s.playBilling.acknowledge({ productId: order.productId, purchaseToken, kind: 'product' });
+      } catch (e) {
+        log.error('Play acknowledgement failed after the order was paid', { message: e instanceof Error ? e.message : String(e) });
+      }
+    }
     res.json({ status: order.status });
   }));
 
@@ -248,6 +269,9 @@ export function orderRoutes(s: Services): Router {
     if (role !== 'dietitian') throw forbidden();
     if (!['paid', 'in_progress', 'delivered'].includes(order.status)) throw conflict(`Order is ${order.status}`, 'invalid_transition');
     const b = parse(planContentSchema.extend({ title: z.string().max(200).optional(), note: z.string().max(1000).optional() }), req.body);
+    // Her app asks her to acknowledge the advice; the blocking problems are checked here as well.
+    const review = reviewPlanForPublish(b);
+    if (review.blocking.length) throw conflict(review.blocking[0]!.message, 'plan_not_publishable');
     const dietitianId = String(order.dietitianId);
     let plan = order.planId ? await Plan.findById(order.planId) : await Plan.findOne({ userId: order.clientId }).sort({ updatedAt: -1 });
     let v: StoredVersion;
@@ -288,66 +312,9 @@ export function orderRoutes(s: Services): Router {
     });
   }));
 
-  // ----- chat -----
-  const messageSchema = z.discriminatedUnion('type', [
-    z.object({ type: z.literal('text'), text: z.string().trim().min(1).max(4000) }),
-    z.object({ type: z.literal('photo'), photoRef: z.string().min(1).max(500), text: z.string().max(1000).optional() }),
-  ]);
-
-  r.post('/:id/messages', asyncHandler(async (req, res) => {
-    const { order, role } = await loadOrder(req);
-    if (role === 'admin') throw forbidden('Admins cannot post in order chats');
-    if (order.status === 'requested' || order.status === 'refunded') throw conflict('Chat is not open for this order');
-    const b = parse(messageSchema, req.body); // plan_update cards are created only by publish-plan
-    const m = await Message.create({ orderId: order._id, senderId: authOf(req).userId, ...b });
-    res.status(201).json({ message: m });
-  }));
-
-  r.get('/:id/messages', asyncHandler(async (req, res) => {
-    const { order } = await loadOrder(req);
-    const q = parse(z.object({ since: z.coerce.date().optional() }), req.query);
-    const filter: Record<string, unknown> = { orderId: order._id };
-    if (q.since) filter['createdAt'] = { $gt: q.since };
-    res.json({ messages: await Message.find(filter).sort({ createdAt: 1 }).limit(500).lean() });
-  }));
-
-  // ----- call bookings -----
-  r.post('/:id/calls', asyncHandler(async (req, res) => {
-    const { order, role } = await loadOrder(req);
-    if (role !== 'client') throw forbidden();
-    if (!['paid', 'in_progress', 'delivered'].includes(order.status)) throw conflict('Calls open once the order is paid');
-    const b = parse(z.object({ slotStart: z.coerce.date(), slotEnd: z.coerce.date() }).refine((v) => v.slotEnd > v.slotStart && v.slotStart > new Date(), { message: 'slot must be in the future and end after it starts' }), req.body);
-    const call = await CallBooking.create({ orderId: order._id, clientId: order.clientId, dietitianId: order.dietitianId, ...b });
-    res.status(201).json({ call });
-  }));
-
-  r.get('/:id/calls', asyncHandler(async (req, res) => {
-    const { order } = await loadOrder(req);
-    res.json({ calls: await CallBooking.find({ orderId: order._id }).sort({ slotStart: 1 }).lean() });
-  }));
-
-  /** Dietitian confirms and provides a link OR a phone number; either party may cancel. */
-  r.patch('/:id/calls/:callId', asyncHandler(async (req, res) => {
-    const { order, role } = await loadOrder(req);
-    const call = await CallBooking.findOne({ _id: objectId(req.params['callId']), orderId: order._id });
-    if (!call) throw notFound();
-    const b = parse(z.union([
-      z.object({ status: z.literal('confirmed'), joinLink: z.string().url().max(500).startsWith('https://'), phone: z.undefined() }),
-      z.object({ status: z.literal('confirmed'), phone: z.string().regex(/^\+[1-9]\d{7,14}$/), joinLink: z.undefined() }),
-      z.object({ status: z.literal('cancelled') }),
-      z.object({ status: z.literal('completed') }),
-    ]), req.body);
-    if (b.status === 'cancelled') {
-      if (role === 'admin') throw forbidden();
-    } else if (role !== 'dietitian') throw forbidden();
-    call.status = b.status;
-    if (b.status === 'confirmed') {
-      if ('joinLink' in b && b.joinLink) call.joinLink = b.joinLink;
-      if ('phone' in b && b.phone) call.phone = b.phone;
-    }
-    await call.save();
-    res.json({ call });
-  }));
+  // Chat and call booking moved to routes/threads.ts, so one implementation serves both the
+  // marketplace and Premium Plus. Thread reads still pick up legacy rows by orderId, so the
+  // plan_update card written by publish-plan and the bookings listed above keep working.
 
   return r;
 }

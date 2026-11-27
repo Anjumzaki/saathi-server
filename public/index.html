@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>Saathi — a plan you&#39;ll actually follow</title>
 <meta name="description" content="Saathi turns your diet plan into meal alarms that ring until you answer, swaps from your own kitchen and a walk after every meal. Android and iPhone.">
 <link rel="canonical" href="https://www.saathi-app.com/">
@@ -416,8 +416,8 @@ footer a{color:var(--muted);text-decoration:none;margin-right:16px}
     </div>
     <div class="price">
       <div class="plan"><div class="eyebrow">Free</div><div class="amt">0<small> forever</small></div><ul><li>Meal and wake alarms that ring</li><li>Today timeline and swaps</li><li>Post-meal walks, strength &amp; yoga slots, BMI</li><li>Progress, weekly recap and cycle insights</li><li>Calorie target for weight-loss goals</li><li>Dietitian marketplace at full price</li></ul><a class="btn ghost" href="#top">Get Saathi</a></div>
-      <div class="plan prem"><span class="peek" id="peekMas" aria-hidden="true"></span><div class="eyebrow">Premium · 7 days free</div><div class="amt"><span id="priceAmt" style="font-size:.7em">Local price</span><small id="pricePer"> / month · your currency</small></div><ul><li>Your plan read by AI from a PDF or photo</li><li>A plan written for you by AI (coming)</li><li>Guided strength and yoga routines, step by step</li><li>Local produce in season near you</li><li>Partner view with someone you invite</li><li>Dietitian plans −30%, follow-ups −50%, from your first payment</li></ul><a class="btn" href="#top">Start 7-day trial</a></div>
-      <div class="plan"><div class="eyebrow">Premium Plus · coming</div><div class="amt"><span style="font-size:.7em">Local price</span><small class="perPlus"> / month · your currency</small></div><ul><li>Everything in Premium</li><li>Chat with a Saathi dietitian</li><li>Book a call when you need one</li><li>For your questions and concerns</li></ul><a class="btn ghost" href="#top">Get Saathi</a></div>
+      <div class="plan prem"><span class="peek" id="peekMas" aria-hidden="true"></span><div class="eyebrow">Premium · 7 days free</div><div class="amt"><span id="priceAmt" style="font-size:.7em">Local price</span><small id="pricePer"> / month</small></div><ul><li>Your plan read by AI from a PDF or photo</li><li>A plan written for you by AI (coming)</li><li>Guided strength and yoga routines, step by step</li><li>Local produce in season near you</li><li>Partner view with someone you invite</li><li>Dietitian plans −30%, follow-ups −50%, from your first payment</li></ul><a class="btn" href="#top">Start 7-day trial</a></div>
+      <div class="plan"><div class="eyebrow">Premium Plus · coming</div><div class="amt"><span style="font-size:.52em">Price not set yet</span></div><ul><li>Everything in Premium</li><li>Chat with a Saathi dietitian</li><li>Book a call when you need one</li><li>For your questions and concerns</li><li>We will show you the price before anything is charged</li></ul><a class="btn ghost" href="#top">Get Saathi</a></div>
     </div>
   </div>
 </section>
@@ -567,8 +567,8 @@ function sketch() {
 sketch();
 
 /* ---------- pricing toggle ---------- */
-$('#segM').onclick = () => { $('#segM').classList.add('on'); $('#segY').classList.remove('on'); $('#pricePer').textContent = $('.perPlus').textContent = ' / month · your currency'; };
-$('#segY').onclick = () => { $('#segY').classList.add('on'); $('#segM').classList.remove('on'); $('#pricePer').textContent = $('.perPlus').textContent = ' / year · 2 months free'; };
+$('#segM').onclick = () => { $('#segM').classList.add('on'); $('#segY').classList.remove('on'); $('#pricePer').textContent = ' / month'; };
+$('#segY').onclick = () => { $('#segY').classList.add('on'); $('#segM').classList.remove('on'); $('#pricePer').textContent = ' / year'; };
 </script>
 
 </body></html>

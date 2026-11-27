@@ -2,6 +2,7 @@
 import mongoose from 'mongoose';
 import { getEnv } from './config/env';
 import seedData from './data/datasets-seed.json';
+import { producePacks } from './data/produce';
 import { Dataset } from './models/Dataset';
 import { FeeConfigModel, PackageConfig } from './models/PackageConfig';
 import { RegionPack } from './models/RegionPack';
@@ -133,6 +134,16 @@ export async function seed(): Promise<void> {
   await PackageConfig.updateOne({ key: 'premium_default', trialDays: 30 }, { $set: { trialDays: TRIAL_DAYS } });
 
   for (const rp of REGION_PACKS) await RegionPack.updateOne({ country: rp.country }, { $setOnInsert: rp }, { upsert: true });
+
+  // The seasonal lists written in `data/produce`. `$set`, not `$setOnInsert`: a corrected list ships as a
+  // new `version` in code and must replace what is stored. The `produce` keyword list is a different field.
+  for (const p of producePacks()) {
+    await RegionPack.updateOne(
+      { country: p.country },
+      { $set: { produceItems: p.items, produceRegions: p.regions, produceVersion: p.version, produceUpdatedAt: new Date(p.updatedAt) }, $setOnInsert: { name: p.name } },
+      { upsert: true },
+    );
+  }
 
   // One-time backfill for accounts that predate email verification. They signed up when no code was
   // asked for, so locking them out now would be punishing them for our change. Runs in the release

@@ -11,6 +11,11 @@ import type {
   VerifiedIdentity,
 } from '../interfaces';
 import type { PlayVerification } from '../services/entitlement';
+import { getEnv } from '../config/env';
+import { AppleIdTokenVerifier, GoogleIdTokenVerifier, UnconfiguredIdTokenVerifier } from '../services/socialAuth';
+import { TwilioSms, UnavailableSms, twilioConfigFromEnv } from '../services/sms';
+import { livePlayBilling } from '../services/playBilling';
+import { liveAppStoreBilling } from '../services/appStore';
 import { log } from '../utils/logger';
 import { ApiError, unauthorized } from '../utils/errors';
 
@@ -27,8 +32,9 @@ export class ConsoleMailer implements Mailer {
   }
 }
 
-/** TODO: real SMS provider (Twilio / Unifonic / AWS SNS). */
+/** Development only: prints the message instead of sending it, so the flow can be walked without Twilio. */
 export class StubSms implements SmsProvider {
+  readonly available = true;
   async send(msg: { to: string; text: string }): Promise<void> {
     if (isProd()) log.info('sms (stub, body suppressed)', { to: msg.to });
     else process.stdout.write(`\n--- SMS to ${msg.to} ---\n${msg.text}\n---\n`);
@@ -36,13 +42,13 @@ export class StubSms implements SmsProvider {
 }
 
 /**
- * TODO: real verifier. Google: verify the JWT signature against https://www.googleapis.com/oauth2/v3/certs,
- * check iss, aud in GOOGLE_CLIENT_IDS and exp (e.g. `google-auth-library` OAuth2Client.verifyIdToken).
- * Apple: verify against https://appleid.apple.com/auth/keys, iss https://appleid.apple.com, aud = APPLE_CLIENT_ID.
- * STUB: accepts "stub:<subject>:<email>" and trusts it. NEVER enable in production.
+ * Development only, for walking the flow with no Google or Apple client id: accepts
+ * "stub:<subject>:<email>" and trusts it. The real verifiers are in `services/socialAuth.ts` and are
+ * used the moment a client id is configured. NEVER enabled in production.
  */
 export class StubIdTokenVerifier implements IdTokenVerifier {
   constructor(private readonly provider: 'google' | 'apple') {}
+  readonly configured = true;
   async verify(idToken: string): Promise<VerifiedIdentity> {
     const m = /^stub:([^:]+):(.+)$/.exec(idToken);
     if (!m) throw unauthorized('Invalid id token (stub accepts "stub:<subject>:<email>")');
@@ -51,12 +57,17 @@ export class StubIdTokenVerifier implements IdTokenVerifier {
 }
 
 /**
- * TODO: real Google Play Developer API (androidpublisher): purchases.subscriptionsv2.get for subscriptions,
- * purchases.products.get for one-off products, then acknowledge the purchase. Use a service account.
- * STUB: tokens starting "stub_valid" are valid (30 days); "stub_trial" yields a 30-day trial; others invalid.
+ * Development only. The real client is `services/playBilling.ts` (purchases.subscriptionsv2.get,
+ * purchases.products.get, :acknowledge and orders:refund over a service account), wired in index.ts
+ * whenever a service account is configured.
+ *
+ * STUB: tokens starting "stub_valid" are valid (30 days); "stub_trial" yields a 30-day trial; others
+ * invalid. In a production process it grants nothing at all, whatever ALLOW_STUB_PROVIDERS says: this is
+ * the money path, and a flag set by mistake must not be able to hand out Premium for the word "stub".
  */
 export class StubPlayBilling implements PlayBilling {
   async verify(args: Parameters<PlayBilling['verify']>[0]): Promise<PlayVerification> {
+    if (isProd()) return refuseStubPurchase('Play');
     const t = args.purchaseToken;
     const in30 = new Date(Date.now() + 30 * 86_400_000);
     if (t.startsWith('stub_trial')) return { valid: true, productId: args.productId, orderId: `GPA.stub.${t}`, expiresAt: in30, isTrial: true, autoRenewing: true };
@@ -64,17 +75,19 @@ export class StubPlayBilling implements PlayBilling {
     return { valid: false };
   }
   async refund(): Promise<void> {
-    log.warn('StubPlayBilling.refund called: no money moved (TODO Play Developer API)');
+    log.warn('StubPlayBilling.refund called: no money moved (configure a Play service account for a real refund)');
   }
 }
 
 /**
- * TODO: real App Store Server API (GET /inApps/v1/subscriptions/{transactionId}, signed with an App Store Connect key),
- * verify the JWS, read expiresDate / offerType / autoRenewStatus. STUB: ids starting "stub_valid" are valid 30 days,
- * "stub_trial" a 30-day trial; others invalid.
+ * Development only. The real client is `services/appStore.ts` (the App Store Server API, signed with an
+ * App Store Connect key, checking the bundle id and the environment). Same production rule as above.
+ *
+ * STUB: ids starting "stub_valid" are valid 30 days, "stub_trial" a 30-day trial; others invalid.
  */
 export class StubAppStoreBilling implements AppStoreBilling {
   async verify(args: Parameters<AppStoreBilling['verify']>[0]): Promise<PlayVerification> {
+    if (isProd()) return refuseStubPurchase('App Store');
     const t = args.transactionId;
     const in30 = new Date(Date.now() + 30 * 86_400_000);
     if (t.startsWith('stub_trial')) return { valid: true, productId: args.productId, orderId: t, expiresAt: in30, isTrial: true, autoRenewing: true };
@@ -107,6 +120,15 @@ export class StubAiPlanReader implements AiPlanReader {
   }
 }
 
+/**
+ * A stub purchase in a production process. Refused rather than returned invalid, so it shows up as a
+ * misconfiguration in the logs instead of looking like a woman's card being declined.
+ */
+function refuseStubPurchase(store: string): never {
+  log.error(`${store} billing is still the development stub in production: no purchase can be verified. Configure the store credentials.`);
+  throw new ApiError(501, 'not_implemented', `${store} billing is not configured`);
+}
+
 /** Stubs are for dev/test. In production they are refused unless ALLOW_STUB_PROVIDERS=true. */
 function guarded<T extends object>(name: string, impl: T, allowed: boolean): T {
   if (allowed) return impl;
@@ -121,15 +143,42 @@ function guarded<T extends object>(name: string, impl: T, allowed: boolean): T {
   });
 }
 
+/**
+ * Social sign-in and SMS are picked here rather than in `index.ts`: each one is real as soon as its
+ * credentials exist, a printing stub in development without them, and an honest refusal otherwise.
+ * Nothing in between, and nothing that looks like it worked when it did not.
+ */
+function socialAndSms(allowed: boolean) {
+  const env = getEnv();
+  const twilio = twilioConfigFromEnv();
+  const appleClientIds = env.APPLE_CLIENT_ID ? [env.APPLE_CLIENT_ID] : [];
+  return {
+    sms: twilio ? new TwilioSms(twilio) : allowed ? new StubSms() : new UnavailableSms(),
+    googleVerifier: env.GOOGLE_CLIENT_IDS.length
+      ? new GoogleIdTokenVerifier(env.GOOGLE_CLIENT_IDS)
+      : allowed
+        ? new StubIdTokenVerifier('google')
+        : new UnconfiguredIdTokenVerifier('google'),
+    appleVerifier: appleClientIds.length
+      ? new AppleIdTokenVerifier(appleClientIds)
+      : allowed
+        ? new StubIdTokenVerifier('apple')
+        : new UnconfiguredIdTokenVerifier('apple'),
+  };
+}
+
 export function createStubServices(opts: { production: boolean; allowStubInProduction: boolean }): Services {
   const allowed = !opts.production || opts.allowStubInProduction;
+  // Billing follows the same rule as social sign-in above: real as soon as the store credentials exist,
+  // the dev stub without them, and a refusal in production either way. It is picked here rather than in
+  // index.ts so there is one place where a provider becomes real.
+  const play = livePlayBilling();
+  const appStore = liveAppStoreBilling();
   return {
     mailer: new ConsoleMailer(), // body suppressed in production
-    sms: guarded('SMS provider', new StubSms(), allowed),
-    googleVerifier: guarded('Google verifier', new StubIdTokenVerifier('google'), allowed),
-    appleVerifier: guarded('Apple verifier', new StubIdTokenVerifier('apple'), allowed),
-    playBilling: guarded('Play billing', new StubPlayBilling(), allowed),
-    appStoreBilling: guarded('App Store billing', new StubAppStoreBilling(), allowed),
+    ...socialAndSms(allowed),
+    playBilling: play ?? guarded('Play billing', new StubPlayBilling(), allowed),
+    appStoreBilling: appStore ?? guarded('App Store billing', new StubAppStoreBilling(), allowed),
     aiPlanReader: guarded('AI plan reader', new StubAiPlanReader(), allowed),
   };
 }

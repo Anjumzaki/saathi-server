@@ -25,7 +25,12 @@ export type ProProfileInput = z.infer<typeof proProfileSchema>;
 
 /** Duplicates (the same city typed twice) are dropped rather than refused. */
 export function tidyProfile(input: ProProfileInput): ProProfileInput {
-  const uniq = (xs: string[]) => [...new Map(xs.map((x) => [x.toLowerCase(), x])).values()];
+  // Keeps the first spelling she used: "Lahore" then "lahore" stays "Lahore".
+  const uniq = (xs: string[]) => {
+    const seen = new Map<string, string>();
+    for (const x of xs) if (!seen.has(x.toLowerCase())) seen.set(x.toLowerCase(), x);
+    return [...seen.values()];
+  };
   return { ...input, specialties: uniq(input.specialties), languages: uniq(input.languages), countries: uniq(input.countries), cities: uniq(input.cities), bandIds: [...new Set(input.bandIds)] };
 }
 

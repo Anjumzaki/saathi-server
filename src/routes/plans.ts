@@ -2,12 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { getEnv } from '../config/env';
 import type { Services } from '../interfaces';
-import { requirePremium } from '../middleware/auth';
+import { requireFeature } from '../middleware/auth';
 import { aiReadLimiter } from '../middleware/rateLimit';
 import { Plan } from '../models/Plan';
 import { RegionPack } from '../models/RegionPack';
 import { planContentSchema, planItemSchema, planProfileSchema } from '../schemas/plan';
-import { aiNotConfigured, createPlanGenerator, type AiPlanGenerator } from '../services/anthropicPlanGenerator';
+import { createPlanGenerator } from '../services/anthropicPlanGenerator';
+import { aiEnvFrom, aiNotConfigured, type AiPlanGenerator } from '../services/planSafety';
 import { DEFAULT_PROTEIN_KEYWORDS, checkPlan } from '../services/planCheck';
 import { nextVersion, type StoredVersion } from '../services/planVersioning';
 import { badRequest, notFound } from '../utils/errors';
@@ -49,7 +50,7 @@ export function planRoutes(s: Services): Router {
   const r = Router();
 
   /** Premium only. ALWAYS returns a draft for the review screen; this route never persists a plan. */
-  r.post('/import-ai', requirePremium, aiReadLimiter, asyncHandler(async (req, res) => {
+  r.post('/import-ai', requireFeature('plan_read_ai'), aiReadLimiter, asyncHandler(async (req, res) => {
     const input = parse(importSchema, req.body);
     const draft = await s.aiPlanReader.read(input);
     res.json({ draft, saved: false, requiresReview: true });
@@ -59,10 +60,11 @@ export function planRoutes(s: Services): Router {
    * Premium only. Writes a week's plan from her answers and returns a draft for the review screen; never persists.
    * As expensive as the reader, so it shares the reader's hourly limit.
    */
-  r.post('/generate-ai', requirePremium, aiReadLimiter, asyncHandler(async (req, res) => {
+  r.post('/generate-ai', requireFeature('plan_generate_ai'), aiReadLimiter, asyncHandler(async (req, res) => {
     const b = parse(generateSchema, req.body);
     // Until `Services` carries the generator, it is resolved here; a stub can be passed in for tests.
-    const generator = (s as { aiPlanGenerator?: AiPlanGenerator }).aiPlanGenerator ?? createPlanGenerator(getEnv());
+    // OpenAI or Anthropic, whichever is configured: aiEnvFrom reads the OpenAI pair until env.ts carries it.
+    const generator = (s as { aiPlanGenerator?: AiPlanGenerator }).aiPlanGenerator ?? createPlanGenerator(aiEnvFrom(getEnv()));
     if (!generator) throw aiNotConfigured();
     const { draft, check } = await generator.generate(b);
     res.json({ draft, check, saved: false, requiresReview: true });

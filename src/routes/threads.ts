@@ -6,8 +6,8 @@
  * There is no voice or video provider behind any of this. A booking is a time plus a note about who
  * rings whom, and nothing here says a call happens inside the app.
  *
- * Delivery is by polling: an open thread asks for messages newer than the last one it holds. When push
- * notifications land, the same `since` query is what the push handler should trigger.
+ * Delivery is by polling: an open thread asks for messages newer than the last one it holds. A push goes
+ * out alongside, carrying the thread id and no words, and the phone then fetches with the same `since`.
  */
 import { Router, type RequestHandler } from 'express';
 import { z } from 'zod';
@@ -27,6 +27,7 @@ import {
   isBookableSlot,
   noticeMessage,
 } from '../services/threadPolicy';
+import { livePush, type PushService } from '../services/push';
 import { assignment, pickNextQueued, queueView } from '../services/threadQueue';
 import { mongoThreadStore, type ThreadRecord, type ThreadStore } from '../services/threadStore';
 import { badRequest, conflict, forbidden, notFound } from '../utils/errors';
@@ -45,9 +46,10 @@ export interface ThreadDeps {
   nameOf(userId: string): Promise<string | null>;
   /** The Premium Plus gate. Representative help is inside the trial, so this is the tier check only. */
   plusGate: RequestHandler;
+  push: PushService;
 }
 
-export const mongoThreadDeps: ThreadDeps = {
+export const mongoThreadDeps: Omit<ThreadDeps, 'push'> = {
   store: mongoThreadStore,
   async order(orderId) {
     const o = await Order.findById(orderId).select('clientId dietitianId status').lean();
@@ -78,7 +80,8 @@ const bookBody = z.object({
 });
 
 export function threadRoutes(overrides: Partial<ThreadDeps> = {}): Router {
-  const d: ThreadDeps = { ...mongoThreadDeps, ...overrides };
+  // livePush() is only reached when nothing is injected, so a test never builds the real service.
+  const d: ThreadDeps = { ...mongoThreadDeps, push: overrides.push ?? livePush(), ...overrides };
   const r = Router();
 
   /** A thread is readable by its two sides and no one else, so a stranger gets the same answer as for a thread that is not there. */
@@ -155,6 +158,21 @@ export function threadRoutes(overrides: Partial<ThreadDeps> = {}): Router {
     res.status(existing ? 200 : 201).json({ thread: await view(t, side, now) });
   }));
 
+  /** Every call she has, across both kinds of thread: one read for the "your calls" screen. */
+  r.get('/calls', asyncHandler(async (req, res) => {
+    const { userId } = authOf(req);
+    const [calls, threads] = await Promise.all([d.store.callsFor(userId), d.store.threadsFor(userId)]);
+    const byThread = new Map(threads.map((t) => [t.id, t]));
+    const named = await Promise.all(
+      calls.map(async (c) => {
+        const t = c.threadId ? byThread.get(c.threadId) : undefined;
+        const otherId = t ? otherUserIdOf(t) : null;
+        return { ...c, threadKind: t?.kind ?? c.kind, otherName: otherId ? await d.nameOf(otherId) : null };
+      }),
+    );
+    res.json({ calls: named, noticeHours: CALL_CHANGE_NOTICE_HOURS });
+  }));
+
   r.get('/:id', asyncHandler(async (req, res) => {
     const { t, side } = await load(req);
     res.json({ thread: await view(t, side, new Date()), side });
@@ -171,7 +189,9 @@ export function threadRoutes(overrides: Partial<ThreadDeps> = {}): Router {
       req.query,
     );
     const page = await d.store.messages({ threadId: t.id, orderId: t.orderId }, { before: q.before, since: q.since, limit: q.limit });
-    res.json({ messages: page.messages, hasMore: page.hasMore });
+    // `mine` saves the phone from having to know her own user id to lay the conversation out.
+    const { userId } = authOf(req);
+    res.json({ messages: page.messages.map((m) => ({ ...m, mine: m.senderId === userId })), hasMore: page.hasMore });
   }));
 
   /**
@@ -186,6 +206,9 @@ export function threadRoutes(overrides: Partial<ThreadDeps> = {}): Router {
     const m = await d.store.addMessage({ threadId: t.id, orderId: t.orderId, senderId: userId, type: 'text', text, planUpdate: null });
     // Sending is also reading: her own message must never come back as unread to herself.
     await d.store.patchThread(t.id, { lastMessageAt: m.createdAt, ...(side === 'client' ? { clientReadAt: m.createdAt } : { otherReadAt: m.createdAt }) });
+    // The other side of the thread, which is nobody while a Plus thread still waits in the queue.
+    const recipient = side === 'client' ? otherUserIdOf(t) : t.clientId;
+    if (recipient) d.push.notify(recipient, { type: 'chat_message', threadId: t.id, threadKind: t.kind, orderId: t.orderId });
     res.status(201).json({ message: m });
   }));
 
@@ -244,12 +267,12 @@ export function threadRoutes(overrides: Partial<ThreadDeps> = {}): Router {
 
   /** Either side may call it off, inside the notice period. Who did it is recorded, so she is told plainly. */
   r.post('/:id/calls/:callId/cancel', asyncHandler(async (req, res) => {
-    const { side, call } = await loadCall(req);
+    const { t, side, call } = await loadCall(req);
     const { reason } = parse(z.object({ reason: z.string().max(300).default('') }), req.body ?? {});
     if (call.status === 'cancelled') throw conflict('That call is already cancelled', 'already_cancelled');
     if (call.status === 'completed') throw conflict('That call has already happened', 'already_completed');
     if (!canChangeCall(call.slotStart, new Date())) throw conflict(noticeMessage(), 'too_late_to_change');
-    if (call.slotId) await d.store.freeSlot(call.threadId ?? '', call.slotId);
+    if (call.slotId) await d.store.freeSlot(t.id, call.slotId);
     const updated = await d.store.patchCall(call.id, { status: 'cancelled', cancelledBy: side, cancelReason: reason });
     res.json({ call: updated });
   }));
