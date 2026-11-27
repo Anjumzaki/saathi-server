@@ -51,7 +51,7 @@ export interface CodeEmail {
 }
 
 /** What the code is for. Drives the subject, the headline and the one-line explanation. */
-export type CodePurpose = 'verify' | 'signin' | 'reset';
+export type CodePurpose = 'verify' | 'signin' | 'reset' | 'email_change';
 
 interface Copy {
   /** The code is prepended, so the whole subject reads "402913 is your Saathi sign-in code". */
@@ -80,6 +80,13 @@ const COPY: Record<CodePurpose, Copy> = {
     heading: 'Set a new password',
     lead: 'Enter this code in the app to choose a new password.',
     textLead: 'Enter this code in the app to choose a new password.',
+  },
+  // Sent to the NEW address only, so it also has to say that nothing has moved yet.
+  email_change: {
+    subject: 'is your Saathi code for this new email',
+    heading: 'Confirm your new email',
+    lead: 'Enter this code in Saathi to start signing in with this address. Your old one keeps working until you do.',
+    textLead: 'Enter this code in Saathi to start signing in with this address. Your old one keeps working until you do.',
   },
 };
 

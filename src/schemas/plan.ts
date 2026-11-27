@@ -46,3 +46,55 @@ export const planContentSchema = z.object({
   recipes: z.array(recipeSchema).max(100).default([]),
 });
 export type PlanContent = z.infer<typeof planContentSchema>;
+
+// ---------- "Let Saathi write it": what the app may tell the generator about her ----------
+
+/** Labels, not option ids: the model reads them. Long lists are capped so one request stays small. */
+const labels = (max: number, len = 80) => z.array(z.string().min(1).max(len)).max(max).default([]);
+const minuteOfDay = z.number().int().min(0).max(1439);
+
+/**
+ * Everything the generator is allowed to know. Nothing about her account: her tier is read from the
+ * database by `requirePremium`, never from this body, and unknown keys are stripped rather than trusted.
+ */
+export const planProfileSchema = z.object({
+  goals: labels(12),
+  cuisine: labels(8),
+  dietPattern: labels(12),
+  allergies: labels(12),
+  usualFoods: labels(30),
+  neverFoods: labels(30),
+  drinks: labels(12),
+  kitchenTools: labels(12),
+  supplements: labels(20),
+  fasting: labels(8),
+  exerciseTypes: labels(14),
+  movementBarriers: labels(12),
+  sleepIssues: labels(8),
+  cycleSymptoms: labels(10),
+  /** Who cooks, and how long she has: both change what can be suggested. */
+  cooks: z.string().max(60).optional(),
+  cookMinutes: z.number().int().min(0).max(240).optional(),
+  spice: z.enum(['mild', 'medium', 'hot']).optional(),
+  workKind: z.string().max(40).optional(),
+  fitnessLevel: z.string().max(60).optional(),
+  walkWhere: z.string().max(60).optional(),
+  walkWhen: z.string().max(60).optional(),
+  cyclePattern: z.string().max(60).optional(),
+  country: z.string().max(60).optional(),
+  heightCm: z.number().min(80).max(250).optional(),
+  weightKg: z.number().min(25).max(400).optional(),
+  weightGoalKg: z.number().min(25).max(400).optional(),
+  age: z.number().int().min(13).max(100).optional(),
+  wakeMin: minuteOfDay.optional(),
+  bedMin: minuteOfDay.optional(),
+  mainMeals: z.number().int().min(1).max(5).optional(),
+  snacks: z.number().int().min(0).max(4).optional(),
+  waterTargetCups: z.number().int().min(0).max(20).optional(),
+  stepTarget: z.number().int().min(0).max(40_000).optional(),
+  workoutSlots: z
+    .array(z.object({ kind: z.string().max(30), weekday: z.number().int().min(0).max(6), startMin: minuteOfDay }))
+    .max(14)
+    .default([]),
+});
+export type PlanProfile = z.infer<typeof planProfileSchema>;

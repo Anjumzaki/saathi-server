@@ -6,6 +6,8 @@ export type Role = (typeof ROLES)[number];
 const subscriptionSchema = new Schema(
   {
     status: { type: String, enum: ['none', 'trialing', 'active', 'expired', 'canceled'], default: 'none' },
+    // Null on records written before Premium Plus existed; those count as "premium".
+    tier: { type: String, enum: ['premium', 'plus'], default: null },
     plan: { type: String, enum: ['monthly', 'yearly'], default: null },
     trialEndsAt: { type: Date, default: null },
     expiresAt: { type: Date, default: null },

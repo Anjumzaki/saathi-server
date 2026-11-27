@@ -6,7 +6,12 @@ const shareSchema = new Schema(
     partnerId: { type: Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     inviteTokenHash: { type: String, unique: true, sparse: true },
     inviteExpiresAt: { type: Date },
-    status: { type: String, enum: ['pending', 'active', 'revoked'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'active', 'paused', 'revoked'], default: 'pending' },
+    /** When the invite was accepted, and when the free preview that started then runs out. Server time only. */
+    acceptedAt: { type: Date, default: null },
+    previewEndsAt: { type: Date, default: null },
+    /** Set when the preview ran out with no package. The share and its cheers stay; paying clears this. */
+    pausedAt: { type: Date, default: null },
     permissions: {
       type: new Schema(
         {
@@ -26,6 +31,22 @@ const shareSchema = new Schema(
   { timestamps: true },
 );
 export const PartnerShare = model('PartnerShare', shareSchema);
+
+/** Shares she accepted that still hold a live or spent preview; 'revoked' ones are left out. */
+export const VIEWER_STATUSES = ['active', 'paused'] as const;
+
+/**
+ * The end of this viewer's free partner preview, or null when they have never accepted an invite.
+ * GET /subscription reports it as `previewEndsAt` so the app can show the days left anywhere.
+ * With more than one share the latest window wins: one package covers every person she is cheering on.
+ */
+export async function previewEndsAtForViewer(userId: string): Promise<Date | null> {
+  const share = await PartnerShare.findOne({ partnerId: userId, status: { $in: VIEWER_STATUSES }, previewEndsAt: { $ne: null } })
+    .sort({ previewEndsAt: -1 })
+    .select('previewEndsAt')
+    .lean();
+  return share?.previewEndsAt ?? null;
+}
 
 const cheerSchema = new Schema(
   {

@@ -532,7 +532,7 @@ stepEls.forEach(s => io.observe(s));
 /* ---------- sky: scroll scrubs the day ---------- */
 const stops = [[0, [255, 248, 244]], [.3, [253, 239, 228]], [.55, [243, 217, 226]], [.66, [176, 111, 142]], [.74, [92, 47, 74]], [1, [36, 24, 32]]];
 function lerpSky(t) { for (let i = 1; i < stops.length; i++) { if (t <= stops[i][0]) { const a = stops[i - 1], b = stops[i], u = (t - a[0]) / (b[0] - a[0]); return 'rgb(' + a[1].map((c, j) => Math.round(c + (b[1][j] - c) * u)).join(',') + ')'; } } return 'rgb(36,24,32)'; }
-let night = false;
+let night = null; // unset, so the first pass always states the theme: a phone in dark mode must not get night-time text on the morning sky
 function sky() {
   const max = document.documentElement.scrollHeight - innerHeight; const t = max > 0 ? Math.min(1, scrollY / max) : 0;
   document.documentElement.style.setProperty('--sky', lerpSky(t));

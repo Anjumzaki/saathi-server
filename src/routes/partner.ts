@@ -2,14 +2,18 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { getEnv } from '../config/env';
 import { DaySummary } from '../models/DaySummary';
-import { Cheer, PartnerShare } from '../models/PartnerShare';
+import { Cheer, PartnerShare, VIEWER_STATUSES } from '../models/PartnerShare';
 import { SyncRecord } from '../models/SyncRecord';
 import { User } from '../models/User';
-import { INVITE_TTL_MS, canCheer, inviteExpiry, isInviteValid } from '../services/partnerLogic';
+import { isPremiumActive } from '../services/entitlement';
+import {
+  INVITE_TTL_MS, PREVIEW_DAYS, SENDING_REQUIRES_PACKAGE, canCheer, inviteExpiry, isInviteValid, partnerAccess, previewEnd,
+  type PartnerAccess,
+} from '../services/partnerLogic';
 import { serializePartnerView, type PartnerSnapshot } from '../services/serializers';
 import { addRole } from '../services/users';
 import { randomToken, sha256 } from '../utils/crypto';
-import { conflict, notFound } from '../utils/errors';
+import { ApiError, conflict, notFound, paymentRequired } from '../utils/errors';
 import { asyncHandler, authOf, objectId, parse } from '../utils/http';
 import { utcDayKey } from '../utils/time';
 
@@ -95,7 +99,66 @@ async function buildSnapshot(ownerId: string, date: string): Promise<PartnerSnap
 const ownerView = (s: InstanceType<typeof PartnerShare>) => ({
   id: String(s._id), status: s.status, partnerId: s.partnerId ? String(s.partnerId) : null,
   permissions: s.permissions, inviteExpiresAt: s.inviteExpiresAt ?? null, lastCheerAt: s.lastCheerAt ?? null,
+  previewEndsAt: s.previewEndsAt ?? null,
 });
+
+/** Shape both screens read: never the raw dates alone, so the phone's clock is never the one deciding. */
+const accessView = (a: PartnerAccess) => ({
+  state: a.state, previewEndsAt: a.previewEndsAt ?? null, daysLeft: a.daysLeft, lastPreviewDay: a.lastPreviewDay, canSeeDay: a.canSeeDay,
+});
+
+type SubLike = Parameters<typeof isPremiumActive>[0];
+const hasPackage = (sub: SubLike, now: Date): boolean => isPremiumActive(sub, now);
+
+/** Does this user hold a package right now? One read, used by every viewer-side route. */
+async function viewerHasPackage(userId: string, now: Date): Promise<boolean> {
+  const u = await User.findById(userId).select('subscription').lean();
+  return hasPackage((u?.subscription ?? null) as SubLike, now);
+}
+
+/**
+ * Every viewer-side route goes through here: it finds the share, works out where the viewer stands, keeps the
+ * stored status in step (paused when the preview ran out, active again the moment they pay) and refuses to hand
+ * over the day without a package once the preview is over. Nothing is deleted either way: the share, its
+ * permissions and its cheers all survive a pause and come back untouched.
+ */
+async function viewerShare(req: Parameters<typeof authOf>[0], shareId: string | undefined, needsDay: boolean) {
+  const { userId } = authOf(req);
+  const share = await PartnerShare.findOne({ _id: objectId(shareId), partnerId: userId, status: { $in: VIEWER_STATUSES } });
+  if (!share) throw notFound();
+  const now = new Date();
+  // Accepted before the preview existed: start the window now rather than cutting an old partner off.
+  if (share.status === 'active' && !share.previewEndsAt) {
+    share.acceptedAt = share.acceptedAt ?? now;
+    share.previewEndsAt = previewEnd(now);
+    await share.save();
+  }
+  const access = partnerAccess({ status: share.status, previewEndsAt: share.previewEndsAt }, await viewerHasPackage(userId, now), now);
+  await syncPausedFlag(share, access, now);
+  if (needsDay && !access.canSeeDay) {
+    throw new ApiError(402, 'preview_ended', `Your ${PREVIEW_DAYS} free days are over. Start your trial to stay connected.`);
+  }
+  return { share, access, now };
+}
+
+/** Writes the paused/active state the pure rule worked out, so her side sees it without the viewer opening the app. */
+async function syncPausedFlag(share: InstanceType<typeof PartnerShare>, access: PartnerAccess, now: Date): Promise<void> {
+  const paused = access.state === 'paused';
+  if (paused && share.status !== 'paused') {
+    await PartnerShare.updateOne({ _id: share._id, status: 'active' }, { $set: { status: 'paused', pausedAt: now } });
+    share.status = 'paused';
+  } else if (!paused && share.status === 'paused') {
+    // Paid: the connection resumes exactly as it was.
+    await PartnerShare.updateOne({ _id: share._id, status: 'paused' }, { $set: { status: 'active', pausedAt: null } });
+    share.status = 'active';
+  }
+}
+
+/** She may share for free today; SENDING_REQUIRES_PACKAGE is the one switch that changes that. */
+async function requireOwnerMaySend(userId: string): Promise<void> {
+  if (!SENDING_REQUIRES_PACKAGE) return;
+  if (!(await viewerHasPackage(userId, new Date()))) throw paymentRequired('Sharing your day needs a package');
+}
 
 export function partnerRoutes(): Router {
   const r = Router();
@@ -103,6 +166,7 @@ export function partnerRoutes(): Router {
   // Owner: the phone's summary of one day, replacing any earlier one for that date.
   r.put('/summary', asyncHandler(async (req, res) => {
     const { userId } = authOf(req);
+    await requireOwnerMaySend(userId);
     const { date, ...summary } = parse(summarySchema, req.body);
     await DaySummary.updateOne({ userId, date }, { $set: { summary } }, { upsert: true });
     res.status(204).end();
@@ -110,6 +174,7 @@ export function partnerRoutes(): Router {
 
   r.post('/invites', asyncHandler(async (req, res) => {
     const { userId } = authOf(req);
+    await requireOwnerMaySend(userId);
     const permissions = parse(permsSchema, req.body?.permissions ?? {});
     const token = randomToken(24);
     const share = await PartnerShare.create({ ownerId: userId, inviteTokenHash: sha256(token), inviteExpiresAt: inviteExpiry(new Date()), permissions });
@@ -131,16 +196,35 @@ export function partnerRoutes(): Router {
     if (String(share.ownerId) === userId) throw conflict('You cannot accept your own invite');
     share.partnerId = (await User.findById(userId).select('_id'))?._id ?? null;
     share.status = 'active';
+    const now = new Date();
+    // The free preview starts here, on server time, and is kept on the share: the phone cannot move it.
+    share.acceptedAt = now;
+    share.previewEndsAt = previewEnd(now);
+    share.pausedAt = null;
     share.set('inviteTokenHash', undefined); // single use
     await share.save();
     await addRole(userId, 'partner');
-    res.json({ share: { id: String(share._id), status: share.status } });
+    const access = partnerAccess({ status: share.status, previewEndsAt: share.previewEndsAt }, await viewerHasPackage(userId, now), now);
+    res.json({ share: { id: String(share._id), status: share.status }, access: accessView(access) });
   }));
 
   r.get('/shares', asyncHandler(async (req, res) => {
     const shares = await PartnerShare.find({ ownerId: authOf(req).userId, status: { $ne: 'revoked' } }).lean();
-    const partners = await User.find({ _id: { $in: shares.map((s) => s.partnerId).filter(Boolean) } }).select('displayName').lean();
-    res.json({ shares: shares.map((s) => ({ id: String(s._id), status: s.status, partnerId: s.partnerId ? String(s.partnerId) : null, partnerName: partners.find((p) => String(p._id) === String(s.partnerId))?.displayName ?? null, permissions: s.permissions, inviteExpiresAt: s.inviteExpiresAt ?? null, lastCheerAt: s.lastCheerAt ?? null })) });
+    const partners = await User.find({ _id: { $in: shares.map((s) => s.partnerId).filter(Boolean) } }).select('displayName subscription').lean();
+    const now = new Date();
+    res.json({
+      shares: shares.map((s) => {
+        const partner = partners.find((p) => String(p._id) === String(s.partnerId));
+        // An older share with no window yet is shown as a full preview; it starts counting on the viewer's next request.
+        const previewEndsAt = s.previewEndsAt ?? (s.status === 'active' ? previewEnd(now) : null);
+        const access = partnerAccess({ status: s.status, previewEndsAt }, hasPackage((partner?.subscription ?? null) as SubLike, now), now);
+        return {
+          id: String(s._id), status: s.status, partnerId: s.partnerId ? String(s.partnerId) : null,
+          partnerName: partner?.displayName ?? null, permissions: s.permissions, inviteExpiresAt: s.inviteExpiresAt ?? null,
+          lastCheerAt: s.lastCheerAt ?? null, previewEndsAt: s.previewEndsAt ?? null, access: accessView(access),
+        };
+      }),
+    });
   }));
 
   r.patch('/shares/:id', asyncHandler(async (req, res) => {
@@ -161,25 +245,34 @@ export function partnerRoutes(): Router {
   }));
 
   // partner side
+  // Names and where the viewer stands; never any of her day. Paused shares are listed so the app can explain itself.
   r.get('/shared-with-me', asyncHandler(async (req, res) => {
-    const shares = await PartnerShare.find({ partnerId: authOf(req).userId, status: 'active' }).lean();
+    const { userId } = authOf(req);
+    const shares = await PartnerShare.find({ partnerId: userId, status: { $in: VIEWER_STATUSES } }).lean();
     const owners = await User.find({ _id: { $in: shares.map((s) => s.ownerId) } }).select('displayName').lean();
-    res.json({ shares: shares.map((s) => ({ id: String(s._id), ownerName: owners.find((o) => String(o._id) === String(s.ownerId))?.displayName ?? null, canCheer: canCheer(s.lastCheerAt, new Date()) })) });
+    const now = new Date();
+    const paid = await viewerHasPackage(userId, now);
+    res.json({
+      shares: shares.map((s) => {
+        const access = partnerAccess({ status: s.status, previewEndsAt: s.previewEndsAt }, paid, now);
+        return {
+          id: String(s._id), ownerName: owners.find((o) => String(o._id) === String(s.ownerId))?.displayName ?? null,
+          canCheer: access.canSeeDay && canCheer(s.lastCheerAt, now), access: accessView(access),
+        };
+      }),
+    });
   }));
 
   r.get('/shares/:id/view', asyncHandler(async (req, res) => {
-    const share = await PartnerShare.findOne({ _id: objectId(req.params['id']), partnerId: authOf(req).userId, status: 'active' });
-    if (!share) throw notFound();
+    const { share, access } = await viewerShare(req, req.params['id'], true);
     const { date } = parse(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).default(utcDayKey(new Date())) }), req.query);
     const snap = await buildSnapshot(String(share.ownerId), date);
-    res.json({ view: serializePartnerView(share.permissions, snap) });
+    res.json({ view: serializePartnerView(share.permissions, snap), access: accessView(access) });
   }));
 
   r.post('/shares/:id/cheer', asyncHandler(async (req, res) => {
     const { userId } = authOf(req);
-    const share = await PartnerShare.findOne({ _id: objectId(req.params['id']), partnerId: userId, status: 'active' });
-    if (!share) throw notFound();
-    const now = new Date();
+    const { share, now } = await viewerShare(req, req.params['id'], true);
     if (!canCheer(share.lastCheerAt, now)) throw conflict('You already cheered today', 'cheer_limit');
     const { emoji } = parse(z.object({ emoji: z.string().max(8).default('👏') }), req.body ?? {});
     // atomic once-per-day guard against double taps

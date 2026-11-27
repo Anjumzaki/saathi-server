@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import type { Services } from '../interfaces';
 import { Cheer, PartnerShare } from '../models/PartnerShare';
 import { CallBooking } from '../models/CallBooking';
 import { DietitianProfile } from '../models/DietitianProfile';
@@ -10,13 +11,25 @@ import { Plan } from '../models/Plan';
 import { RefreshToken } from '../models/RefreshToken';
 import { SyncRecord } from '../models/SyncRecord';
 import { User } from '../models/User';
-import { displayNameField, phoneE164, termsVersionField } from '../schemas/common';
+import { displayNameField, emailField, phoneE164, termsVersionField } from '../schemas/common';
+import { codeEmail } from '../services/emailTemplates';
+import { checkOtp, issueOtp } from '../services/otp';
+import { OTP_CONFIG } from '../services/otpLogic';
 import { CURRENT_TERMS_VERSION } from '../services/signupProfile';
-import { serializeUser } from '../services/users';
-import { conflict, notFound } from '../utils/errors';
+import { emailChangeOtpKey, emailChangeOtpKeyPrefix, emailChangeProblem, serializeUser } from '../services/users';
+import { conflict, notFound, notImplemented } from '../utils/errors';
 import { asyncHandler, authOf, parse } from '../utils/http';
 
-export function accountRoutes(): Router {
+/** Taken from the OTP config so the email can never promise an expiry the server does not honour. */
+const OTP_MINUTES = Math.round(OTP_CONFIG.ttlMs / 60_000);
+const sixDigits = z.string().regex(/^\d{6}$/, 'code must be 6 digits');
+
+/**
+ * `services` is optional only because app.ts still mounts this router as `accountRoutes()`. Email
+ * change needs the mailer, so until that call passes `services` the two /email routes answer 501
+ * rather than pretending a code went out. See qa/wiring/free-features.md.
+ */
+export function accountRoutes(services?: Pick<Services, 'mailer'>): Router {
   const r = Router();
 
   r.get('/', asyncHandler(async (req, res) => {
@@ -51,6 +64,52 @@ export function accountRoutes(): Router {
       u.termsVersion = termsVersion ?? CURRENT_TERMS_VERSION;
     }
     await u.save();
+    res.json({ user: serializeUser(u) });
+  }));
+
+  /**
+   * Changing the sign-in address, step 1: claim it and send a code to the NEW address. Nothing on the
+   * account changes here, so the old address keeps working (and keeps signing in) until step 2.
+   * Asking again is the resend: the OTP service enforces its own cooldown and attempt lock.
+   */
+  r.post('/email/change', asyncHandler(async (req, res) => {
+    const { email } = parse(z.object({ email: emailField }).strict(), req.body);
+    const mailer = services?.mailer;
+    if (!mailer) throw notImplemented('Changing your email is not available on this server yet.');
+    const u = await User.findById(authOf(req).userId);
+    if (!u || u.deletedAt) throw notFound();
+    const takenByOther = !!(await User.exists({ email, deletedAt: null, _id: { $ne: u._id } }));
+    const problem = emailChangeProblem(u.email, email, takenByOther);
+    if (problem === 'same_email') throw conflict('That is already your email address.', 'same_email');
+    if (problem) throw conflict('An account with this email already exists. Use a different address.', 'email_in_use');
+    const { code, resendAfterSeconds } = await issueOtp(emailChangeOtpKey(String(u._id), email));
+    await mailer.send({ to: email, ...codeEmail('email_change', code, OTP_MINUTES) });
+    res.json({ ok: true, pendingEmail: email, resendAfterSeconds });
+  }));
+
+  /**
+   * Step 2: the code proves she can read the new mailbox, so that is what moves the address and marks
+   * it verified. The "already in use" check runs again here, because another account could have
+   * claimed the address while this code was in flight.
+   */
+  r.post('/email/confirm', asyncHandler(async (req, res) => {
+    const { email, code } = parse(z.object({ email: emailField, code: sixDigits }).strict(), req.body);
+    const u = await User.findById(authOf(req).userId);
+    if (!u || u.deletedAt) throw notFound();
+    if (u.email === email) { res.json({ user: serializeUser(u) }); return; } // already done (she tapped twice)
+    await checkOtp(emailChangeOtpKey(String(u._id), email), code);
+    if (await User.exists({ email, deletedAt: null, _id: { $ne: u._id } })) {
+      throw conflict('An account with this email already exists. Use a different address.', 'email_in_use');
+    }
+    u.email = email;
+    u.emailVerifiedAt = new Date();
+    try {
+      await u.save();
+    } catch (e) {
+      // The unique index is the last word, in case two accounts confirmed the same address at once.
+      if ((e as { code?: number }).code === 11000) throw conflict('An account with this email already exists. Use a different address.', 'email_in_use');
+      throw e;
+    }
     res.json({ user: serializeUser(u) });
   }));
 
@@ -108,6 +167,7 @@ export function accountRoutes(): Router {
       Plan.deleteMany({ userId }),
       RefreshToken.deleteMany({ userId }),
       Otp.deleteMany({ key: { $regex: `^phone:${userId}:` } }),
+      Otp.deleteMany({ key: { $regex: `^${emailChangeOtpKeyPrefix(userId)}` } }),
       Cheer.deleteMany({ shareId: { $in: myShares.map((s) => s._id) } }),
       PartnerShare.deleteMany({ _id: { $in: myShares.map((s) => s._id) } }),
       DietitianProfile.deleteMany({ userId }),

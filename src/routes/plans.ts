@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { getEnv } from '../config/env';
 import type { Services } from '../interfaces';
 import { requirePremium } from '../middleware/auth';
 import { aiReadLimiter } from '../middleware/rateLimit';
 import { Plan } from '../models/Plan';
 import { RegionPack } from '../models/RegionPack';
-import { planContentSchema, planItemSchema } from '../schemas/plan';
+import { planContentSchema, planItemSchema, planProfileSchema } from '../schemas/plan';
+import { aiNotConfigured, createPlanGenerator, type AiPlanGenerator } from '../services/anthropicPlanGenerator';
 import { DEFAULT_PROTEIN_KEYWORDS, checkPlan } from '../services/planCheck';
 import { nextVersion, type StoredVersion } from '../services/planVersioning';
 import { badRequest, notFound } from '../utils/errors';
@@ -20,6 +22,14 @@ const fileSchema = z.object({
 const importSchema = z
   .object({ text: z.string().min(1).max(50_000).optional(), fileRef: z.string().min(1).max(500).optional(), file: fileSchema.optional(), locale: z.string().max(20).optional() })
   .refine((v) => [v.text, v.fileRef, v.file].filter((x) => !!x).length === 1, { message: 'Provide exactly one of text, file or fileRef' });
+
+/** "Let Saathi write it": her answers, sent by the app. Her tier is read from the database, never from this body. */
+const generateSchema = z.object({
+  profile: planProfileSchema,
+  /** Anything she wants to add in her own words. */
+  note: z.string().max(1000).optional(),
+  locale: z.string().max(20).optional(),
+});
 
 const checkSchema = z.object({
   items: z.array(planItemSchema.partial({ key: true, daysOfWeek: true, tier: true, options: true })).max(200),
@@ -43,6 +53,19 @@ export function planRoutes(s: Services): Router {
     const input = parse(importSchema, req.body);
     const draft = await s.aiPlanReader.read(input);
     res.json({ draft, saved: false, requiresReview: true });
+  }));
+
+  /**
+   * Premium only. Writes a week's plan from her answers and returns a draft for the review screen; never persists.
+   * As expensive as the reader, so it shares the reader's hourly limit.
+   */
+  r.post('/generate-ai', requirePremium, aiReadLimiter, asyncHandler(async (req, res) => {
+    const b = parse(generateSchema, req.body);
+    // Until `Services` carries the generator, it is resolved here; a stub can be passed in for tests.
+    const generator = (s as { aiPlanGenerator?: AiPlanGenerator }).aiPlanGenerator ?? createPlanGenerator(getEnv());
+    if (!generator) throw aiNotConfigured();
+    const { draft, check } = await generator.generate(b);
+    res.json({ draft, check, saved: false, requiresReview: true });
   }));
 
   /** Structural check (pure functions). Open to everyone. */

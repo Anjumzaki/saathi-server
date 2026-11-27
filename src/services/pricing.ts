@@ -1,4 +1,6 @@
 /** Pure pricing helpers over PackageConfig-shaped data. */
+import type { SubStatus } from './entitlement';
+
 export type PlanVariant = 'full' | 'premium' | 'followUp';
 
 export interface PricePoint {
@@ -12,10 +14,14 @@ export interface VariantConfig {
   prices: PricePoint[];
 }
 
-/** Follow-up (bigger discount) wins over Premium, which wins over full price. */
-export function chooseVariant(opts: { isPremium: boolean; hasPriorOrderWithDietitian: boolean }): PlanVariant {
+/**
+ * Follow-up (bigger discount) wins over Premium, which wins over full price. The Premium price is a
+ * thank-you for paying, so a trial does not get it: pass `status` and a trialing account pays full.
+ */
+export function chooseVariant(opts: { isPremium: boolean; hasPriorOrderWithDietitian: boolean; status?: SubStatus | null }): PlanVariant {
   if (opts.hasPriorOrderWithDietitian) return 'followUp';
-  return opts.isPremium ? 'premium' : 'full';
+  const discountEarned = opts.isPremium && opts.status !== 'trialing';
+  return discountEarned ? 'premium' : 'full';
 }
 
 export function findPrice(v: VariantConfig, country: string): PricePoint | null {

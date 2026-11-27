@@ -26,7 +26,36 @@ const BANDS: { id: string; label: string; major: Record<string, number> }[] = [
 const PREMIUM_SUB: Record<string, { monthly: number; yearly: number }> = {
   PK: { monthly: 1000, yearly: 9000 }, IN: { monthly: 399, yearly: 3499 }, AE: { monthly: 19, yearly: 169 }, GB: { monthly: 4.99, yearly: 44.99 }, US: { monthly: 5.99, yearly: 54.99 },
 };
+/** PLACEHOLDERS. Premium Plus carries the cost of real dietitian time; set the real prices in the admin API. */
+const PLUS_SUB: Record<string, { monthly: number; yearly: number }> = {
+  PK: { monthly: 2500, yearly: 22500 }, IN: { monthly: 999, yearly: 8999 }, AE: { monthly: 49, yearly: 449 }, GB: { monthly: 12.99, yearly: 119.99 }, US: { monthly: 14.99, yearly: 139.99 },
+};
 const minor = (x: number) => Math.round(x * 100);
+
+/** The trial is the same length on both packages, and the store takes the first payment when it ends. */
+const TRIAL_DAYS = 7;
+
+/**
+ * What each package opens. The server is the authority (see services/entitlement), but the config carries
+ * the same list so a package can be re-cut without an app release.
+ */
+const PREMIUM_PKG_FEATURES = ['plan_read_ai', 'plan_generate_ai', 'guided_routines', 'local_produce', 'partner_view', 'dietitian_discount', 'merchant_discount', 'watch_access'];
+const PLUS_PKG_FEATURES = [...PREMIUM_PKG_FEATURES, 'representative_help', 'saathi_plan_request'];
+
+/** Paywall copy, in order. Merchant discounts and watch access are deliberately not advertised. */
+const PREMIUM_PERKS = [
+  'Read your plan from a PDF, photo or pasted text',
+  'Let Saathi write a plan around your days',
+  'Guided strength and yoga routines',
+  'Produce that is in season where you live',
+  'Let someone you trust follow along and cheer you on',
+  'A lower price on a dietitian plan, once your first payment goes through',
+];
+const PLUS_PERKS = [
+  'Everything in Premium',
+  'Chat with a Saathi dietitian whenever something is unclear',
+  'Ask a Saathi dietitian to write your plan for you',
+];
 
 export const REGION_PACKS = [
   { country: 'PK', name: 'Pakistan', quietHourProvider: true, powerCutMode: true, produce: ['okra', 'spinach', 'cauliflower', 'mango', 'guava', 'dates'], proteinKeywords: ['anda', 'daal', 'dal', 'chana', 'lobia', 'dahi', 'chicken', 'gosht', 'machli', 'paneer'] },
@@ -74,15 +103,34 @@ export async function seed(): Promise<void> {
     );
   }
 
-  const sub = (k: 'monthly' | 'yearly') => COUNTRIES.map((c) => ({ ...c, amountMinor: minor(PREMIUM_SUB[c.country]![k]) }));
-  await PackageConfig.updateOne(
-    { key: 'premium_default' },
-    { $setOnInsert: { key: 'premium_default', kind: 'premium', label: 'Saathi Premium', trialDays: 30, active: true, sortOrder: 0, variants: [
-      { variant: 'monthly', productId: 'saathi_premium_monthly', prices: sub('monthly') },
-      { variant: 'yearly', productId: 'saathi_premium_yearly', prices: sub('yearly') },
-    ] } },
-    { upsert: true },
-  );
+  const sub = (table: Record<string, { monthly: number; yearly: number }>, k: 'monthly' | 'yearly') =>
+    COUNTRIES.map((c) => ({ ...c, amountMinor: minor(table[c.country]![k]) }));
+
+  const PAID_PACKAGES = [
+    { key: 'premium_default', tier: 'premium', label: 'Saathi Premium', sortOrder: 0, table: PREMIUM_SUB, features: PREMIUM_PKG_FEATURES, perks: PREMIUM_PERKS, sku: 'saathi_premium' },
+    { key: 'premium_plus', tier: 'plus', label: 'Saathi Premium Plus', sortOrder: 1, table: PLUS_SUB, features: PLUS_PKG_FEATURES, perks: PLUS_PERKS, sku: 'saathi_plus' },
+  ] as const;
+
+  for (const p of PAID_PACKAGES) {
+    await PackageConfig.updateOne(
+      { key: p.key },
+      { $setOnInsert: { key: p.key, kind: 'premium', label: p.label, trialDays: TRIAL_DAYS, active: true, sortOrder: p.sortOrder, tier: p.tier, features: p.features, perks: p.perks, variants: [
+        { variant: 'monthly', productId: `${p.sku}_monthly`, prices: sub(p.table, 'monthly') },
+        { variant: 'yearly', productId: `${p.sku}_yearly`, prices: sub(p.table, 'yearly') },
+      ] } },
+      { upsert: true },
+    );
+    // Tier, features and perks are new fields: fill them in where an earlier seed left them empty,
+    // without touching prices or anything an admin may have edited.
+    await PackageConfig.updateOne(
+      { key: p.key, $or: [{ tier: null }, { tier: { $exists: false } }, { features: { $size: 0 } }] },
+      { $set: { tier: p.tier, features: p.features, perks: p.perks } },
+    );
+  }
+
+  // The trial was first seeded at 30 days and is now 7. Only the old seeded value is corrected, so a
+  // length an admin has since chosen stays as they set it.
+  await PackageConfig.updateOne({ key: 'premium_default', trialDays: 30 }, { $set: { trialDays: TRIAL_DAYS } });
 
   for (const rp of REGION_PACKS) await RegionPack.updateOne({ country: rp.country }, { $setOnInsert: rp }, { upsert: true });
 
