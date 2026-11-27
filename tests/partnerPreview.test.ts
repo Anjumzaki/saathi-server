@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  PREVIEW_DAYS, PREVIEW_MS, SENDING_REQUIRES_PACKAGE, partnerAccess, previewDaysLeft, previewEnd,
+  PREVIEW_DAYS, PREVIEW_MS, SENDING_REQUIRES_PACKAGE, partnerAccess, previewDaysLeft, previewEnd, previewWindowFor,
 } from '../src/services/partnerLogic';
 import { DAY } from '../src/utils/time';
 
@@ -42,6 +42,18 @@ describe('the free preview', () => {
     // no req.body, no req.query and no client date: only the share's own dates and the server clock
     expect(guard).not.toMatch(/req\.(body|query)/);
     expect(guard).toContain('new Date()');
+  });
+
+  it('cannot be restarted by inviting the same person again', () => {
+    const first = previewWindowFor(null, accepted);
+    expect(first.toISOString()).toBe(previewEnd(accepted).toISOString());
+    // a second invite two days later joins the window the first acceptance opened
+    expect(previewWindowFor(first, at(2 * DAY)).toISOString()).toBe(first.toISOString());
+    expect(partnerAccess(share({ previewEndsAt: previewWindowFor(first, at(2 * DAY)) }), false, at(2 * DAY)).daysLeft).toBe(1);
+    expect(partnerAccess(share({ previewEndsAt: previewWindowFor(first, at(4 * DAY)) }), false, at(4 * DAY)).state).toBe('paused');
+    const src = readFileSync(ROUTES, 'utf8');
+    expect(src).toContain('previewWindowFor(await earliestPreviewEndsAtForViewer(userId), now)');
+    expect(src).not.toMatch(/previewEndsAt = previewEnd\(now\)/); // never a fresh window on accept
   });
 
   it('reports an invite nobody has accepted as invited, and never lets it read the day', () => {

@@ -19,6 +19,8 @@ const callSchema = new Schema(
     clientId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     /** The other side: the dietitian she bought from, or the Saathi dietitian on her thread. */
     dietitianId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    /** The offered slot she booked, so it can go back on offer if the call is moved or called off. */
+    slotId: { type: String, default: null },
     slotStart: { type: Date, required: true },
     slotEnd: { type: Date, required: true },
     status: { type: String, enum: CALL_STATUSES, default: 'requested' },

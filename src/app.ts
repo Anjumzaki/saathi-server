@@ -62,7 +62,7 @@ export function createApp(services: Services): Express {
   app.use('/v1', v1);
 
   // The marketing website shares this app (saathi-app.com); the API stays under /v1.
-  mountSite(app, { production: env.NODE_ENV === 'production' });
+  mountSite(app, { production: env.NODE_ENV === 'production', host: env.SITE_HOST });
 
   app.use(notFoundHandler);
   app.use(errorHandler);

@@ -17,6 +17,8 @@
 <meta name="twitter:title" content="Check my diet plan: free structural check | Saathi">
 <meta name="twitter:description" content="Paste your diet plan and get it checked for long gaps, missing protein, tea too close to iron, late dinner and water. Runs in your browser, nothing is uploaded, no sign-up.">
 <meta name="twitter:image" content="https://www.saathi-app.com/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Saathi plan check", "url": "https://www.saathi-app.com/plan-check.html", "applicationCategory": "HealthApplication", "operatingSystem": "Any", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "A free structural check of a diet plan: meal gaps, protein at each main meal, tea and iron spacing, dinner before sleep, water."}</script>
 <style>
@@ -198,7 +200,7 @@ function render(plan){
  if(r.tweaks.length)h+='<div style="display:flex;flex-direction:column;gap:12px;margin-top:16px">'+r.tweaks.map(function(t,i){
   return '<div class="card" style="gap:8px"><h3 style="font-size:16px">'+t.title+'</h3><p>'+t.detail+'</p><button class="btn ghost sm" type="button" data-tw="'+i+'" style="align-self:flex-start">'+t.suggestion+'</button></div>'}).join('')+'</div>';
  else h+='<div class="card" style="margin-top:16px;gap:8px"><span data-mas="cheering 72"></span><h3>Nothing to change</h3><p>The shape of this plan is sound. The next question is whether it happens every day &mdash; that part is what the app is for.</p></div>';
- h+='<div class="card" style="margin-top:16px;background:var(--surface2);box-shadow:none;gap:8px"><div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--head)">'+tick+'Want this plan to ring on time?</div><p>Saathi turns it into meal alarms, swaps and a weekly recap. Free, one month of Premium, no card.</p><a class="btn" href="download.html" style="align-self:flex-start">Get Saathi</a></div>';
+ h+='<div class="card" style="margin-top:16px;background:var(--surface2);box-shadow:none;gap:8px"><div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--head)">'+tick+'Want this plan to ring on time?</div><p>Saathi turns it into meal alarms, swaps and a weekly recap. Free, with a 7-day Premium trial.</p><a class="btn" href="download.html" style="align-self:flex-start">Get Saathi</a></div>';
  out.innerHTML=h;
  out.querySelectorAll('[data-tw]').forEach(function(b){b.addEventListener('click',function(){
   var t=r.tweaks[+b.dataset.tw];plan=apply(plan,t);writeBack(plan);render(parsePlan());

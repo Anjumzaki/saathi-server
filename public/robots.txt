@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /v1/
+Disallow: /partner/
 
 Sitemap: https://www.saathi-app.com/sitemap.xml

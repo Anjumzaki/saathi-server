@@ -2,12 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { getEnv } from '../config/env';
 import { DaySummary } from '../models/DaySummary';
-import { Cheer, PartnerShare, VIEWER_STATUSES } from '../models/PartnerShare';
+import { Cheer, PartnerShare, VIEWER_STATUSES, earliestPreviewEndsAtForViewer } from '../models/PartnerShare';
 import { SyncRecord } from '../models/SyncRecord';
 import { User } from '../models/User';
 import { isPremiumActive } from '../services/entitlement';
 import {
   INVITE_TTL_MS, PREVIEW_DAYS, SENDING_REQUIRES_PACKAGE, canCheer, inviteExpiry, isInviteValid, partnerAccess, previewEnd,
+  previewWindowFor,
   type PartnerAccess,
 } from '../services/partnerLogic';
 import { serializePartnerView, type PartnerSnapshot } from '../services/serializers';
@@ -130,7 +131,7 @@ async function viewerShare(req: Parameters<typeof authOf>[0], shareId: string | 
   // Accepted before the preview existed: start the window now rather than cutting an old partner off.
   if (share.status === 'active' && !share.previewEndsAt) {
     share.acceptedAt = share.acceptedAt ?? now;
-    share.previewEndsAt = previewEnd(now);
+    share.previewEndsAt = previewWindowFor(await earliestPreviewEndsAtForViewer(userId), now);
     await share.save();
   }
   const access = partnerAccess({ status: share.status, previewEndsAt: share.previewEndsAt }, await viewerHasPackage(userId, now), now);
@@ -199,7 +200,7 @@ export function partnerRoutes(): Router {
     const now = new Date();
     // The free preview starts here, on server time, and is kept on the share: the phone cannot move it.
     share.acceptedAt = now;
-    share.previewEndsAt = previewEnd(now);
+    share.previewEndsAt = previewWindowFor(await earliestPreviewEndsAtForViewer(userId), now);
     share.pausedAt = null;
     share.set('inviteTokenHash', undefined); // single use
     await share.save();

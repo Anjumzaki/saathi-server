@@ -10,10 +10,10 @@ import { Plan } from '../models/Plan';
 import { SyncRecord } from '../models/SyncRecord';
 import { User } from '../models/User';
 import { planContentSchema } from '../schemas/plan';
-import { isPremiumActive } from '../services/entitlement';
+import { effectiveStatus, isPremiumActive } from '../services/entitlement';
 import { getFeeConfig } from '../services/feeConfig';
 import { computeSettlement } from '../services/money';
-import { canRelease, canTransition, isRefundEligible } from '../services/orderState';
+import { canRelease, canTransition, isRefundEligible, refundOpensAt } from '../services/orderState';
 import { nextVersion, type StoredVersion } from '../services/planVersioning';
 import { chooseVariant, findPrice, type VariantConfig } from '../services/pricing';
 import { serializePlanForDietitian, serializeRecordsForDietitian, type PlanLike, type SyncRecordLike } from '../services/serializers';
@@ -36,6 +36,35 @@ async function loadOrder(req: Request): Promise<{ order: OrderDoc; role: 'client
 function move(order: OrderDoc, to: OrderDoc['status']): void {
   if (!canTransition(order.status, to)) throw conflict(`Order is ${order.status}; cannot move to ${to}`, 'invalid_transition');
   order.status = to;
+}
+
+type ClientLike = { country?: string | null; subscription?: unknown };
+
+/**
+ * The price of one band for one client, in one place, so a quote and the order it turns into can never disagree.
+ * The subscriber price is a thank-you for paying, so a trial pays full: `status` is passed to `chooseVariant`,
+ * which refuses the discount while she is "trialing".
+ */
+function priceFor(client: ClientLike, pkg: { key: string; label: string; variants: unknown[] }, hasPrior: boolean, now: Date) {
+  const sub = client.subscription as never;
+  const status = effectiveStatus(sub, now);
+  const isPremium = isPremiumActive(sub, now);
+  const variant = chooseVariant({ isPremium, hasPriorOrderWithDietitian: hasPrior, status });
+  const country = client.country ?? '';
+  const pick = (name: string) => {
+    const v = (pkg.variants as VariantConfig[]).find((x) => x.variant === name);
+    const p = v && findPrice(v, country);
+    return v && p ? { variant: name, productId: v.productId, currency: p.currency, amountMinor: p.amountMinor } : null;
+  };
+  return {
+    status,
+    isPremium,
+    chosen: pick(variant),
+    /** What she would pay without any discount, so the app can show the saving honestly. */
+    list: pick('full'),
+    /** She is Premium but has not been charged yet: the subscriber price starts after her first payment. */
+    discountHeldForTrial: isPremium && status === 'trialing' && variant === 'full',
+  };
 }
 
 /** Shared by the client refund route and the settle job. */
@@ -64,13 +93,11 @@ export function orderRoutes(s: Services): Router {
     if (!pkg) throw notFound('Package not found');
     if (!client?.country) throw badRequest('Set your country (PATCH /v1/me) before ordering', { code: 'country_required' });
     const prior = await Order.exists({ clientId: userId, dietitianId, status: { $in: ['delivered', 'released'] } });
-    const variantName = chooseVariant({ isPremium: isPremiumActive(client.subscription as never, new Date()), hasPriorOrderWithDietitian: !!prior });
-    const variant = pkg.variants.find((v) => v.variant === variantName) as VariantConfig | undefined;
-    const price = variant && findPrice(variant, client.country);
-    if (!variant || !price) throw conflict(`No ${variantName} price configured for ${client.country}`, 'no_price');
+    const q = priceFor(client, pkg as never, !!prior, new Date());
+    if (!q.chosen) throw conflict(`No price configured for ${client.country}`, 'no_price');
     const order = await Order.create({
-      clientId: userId, dietitianId, packageKey: pkg.key, bandId: body.bandId, variant: variantName,
-      productId: variant.productId, country: client.country, currency: price.currency, pricePaid: price.amountMinor, status: 'requested',
+      clientId: userId, dietitianId, packageKey: pkg.key, bandId: body.bandId, variant: q.chosen.variant,
+      productId: q.chosen.productId, country: client.country, currency: q.chosen.currency, pricePaid: q.chosen.amountMinor, status: 'requested',
     });
     res.status(201).json({ order });
   }));
@@ -78,6 +105,7 @@ export function orderRoutes(s: Services): Router {
   r.get('/', asyncHandler(async (req, res) => {
     const { userId } = authOf(req);
     const orders = await Order.find({ $or: [{ clientId: userId }, { dietitianId: userId }] }).select('-purchaseToken').sort({ createdAt: -1 }).limit(100).lean();
+    const fees = await getFeeConfig();
     // Names for the history screens: the package label, the dietitian's name and every call booked on the order.
     const [pkgs, profiles, calls] = await Promise.all([
       PackageConfig.find({ key: { $in: [...new Set(orders.map((o) => o.packageKey))] } }).select('key label').lean(),
@@ -95,9 +123,49 @@ export function orderRoutes(s: Services): Router {
           packageLabel: label.get(o.packageKey) ?? o.packageKey,
           dietitianName: names.get(String(o.dietitianId)) ?? null,
           calls: calls.filter((c) => String(c.orderId) === String(o._id)),
+          // When she may ask for her money back, so the app shows the wait without knowing the fee config.
+          refundOpensAt: refundOpensAt(o as never, fees.refundWindowHours),
           ...(mine ? {} : { settlement }),
         };
       }),
+    });
+  }));
+
+  /**
+   * What a band would cost her, before anything is created. Declared above `/:id` so "quote" is not read as an id.
+   * The server is the authority on the discount: the app shows what comes back and never works it out itself.
+   */
+  r.get('/quote', asyncHandler(async (req, res) => {
+    const { userId } = authOf(req);
+    const q = parse(z.object({ dietitianId: z.string(), bandId: z.string().min(1).max(64) }), req.query);
+    const dietitianId = objectId(q.dietitianId);
+    if (dietitianId === userId) throw badRequest('You cannot order from yourself');
+    const [profile, client, pkg] = await Promise.all([
+      DietitianProfile.findOne({ userId: dietitianId, status: 'approved' }).select('userId displayName').lean(),
+      User.findById(userId).lean(),
+      PackageConfig.findOne({ kind: 'dietitian_plan', bandId: q.bandId, active: true }).lean(),
+    ]);
+    if (!profile) throw notFound('Dietitian not found');
+    if (!pkg) throw notFound('Package not found');
+    if (!client?.country) throw badRequest('Set your country (PATCH /v1/me) before ordering', { code: 'country_required' });
+    const prior = await Order.exists({ clientId: userId, dietitianId, status: { $in: ['delivered', 'released'] } });
+    const priced = priceFor(client, pkg as never, !!prior, new Date());
+    if (!priced.chosen) throw conflict(`No price configured for ${client.country}`, 'no_price');
+    res.json({
+      quote: {
+        bandId: q.bandId,
+        packageKey: pkg.key,
+        label: pkg.label,
+        variant: priced.chosen.variant,
+        productId: priced.chosen.productId,
+        currency: priced.chosen.currency,
+        amountMinor: priced.chosen.amountMinor,
+        // The full price, for an honest "you save" line; equal to amountMinor when no discount applies.
+        listCurrency: priced.list?.currency ?? priced.chosen.currency,
+        listAmountMinor: priced.list?.amountMinor ?? priced.chosen.amountMinor,
+        subscriptionStatus: priced.status,
+        discountHeldForTrial: priced.discountHeldForTrial,
+      },
     });
   }));
 
@@ -107,7 +175,8 @@ export function orderRoutes(s: Services): Router {
     delete (o as { purchaseToken?: string }).purchaseToken;
     // The client does not need the fee breakdown.
     if (role === 'client') delete (o as { settlement?: unknown }).settlement;
-    res.json({ order: o, role });
+    const fees = await getFeeConfig();
+    res.json({ order: { ...o, refundOpensAt: refundOpensAt(o as never, fees.refundWindowHours) }, role });
   }));
 
   /** Client reports a completed Play purchase; the server verifies it and snapshots the settlement. */

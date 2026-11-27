@@ -20,6 +20,7 @@
     "mail:preview": "tsx scripts/preview-email.ts"
   },
   "dependencies": {
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
@@ -30,6 +31,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.7",

@@ -27,7 +27,27 @@ describe('website', () => {
   });
   it('serves a page with and without .html', async () => {
     expect((await page('/pricing.html')).status).toBe(200);
-    expect((await page('/pricing')).status).toBe(200);
+    const short = await page('/pricing?x=1');
+    expect(short.status).toBe(301);
+    expect(short.headers.get('location')).toBe('/pricing.html?x=1');
+    const index = await page('/index.html');
+    expect(index.status).toBe(301);
+    expect(index.headers.get('location')).toBe('/');
+  });
+  it('compresses pages and keeps the API out of search results', async () => {
+    const r = await fetch(base + '/features.html', { headers: { 'accept-encoding': 'gzip' } });
+    expect(r.headers.get('content-encoding')).toBe('gzip');
+    expect((await fetch(base + '/health')).headers.get('x-robots-tag')).toBe('noindex');
+    expect(r.headers.get('x-robots-tag')).toBeNull();
+  });
+  it('gives every page a title, a description and a canonical address on the main host', async () => {
+    for (const p of ['/', '/pricing.html', '/blog-pcos-plate.html', '/about.html']) {
+      const head = (await (await page(p)).text()).split('</head>')[0] ?? '';
+      expect(head).toMatch(/<title>[^<]{10,65}<\/title>/);
+      expect(head).toMatch(/<meta name="description" content="[^"]{50,170}">/);
+      expect(head).toContain('<link rel="canonical" href="https://www.saathi-app.com/');
+      expect(head).toContain('og:title');
+    }
   });
   it('serves robots.txt, the sitemap and images', async () => {
     expect((await fetch(base + '/robots.txt')).status).toBe(200);
@@ -92,14 +112,17 @@ describe('website in production', () => {
     const app = express();
     app.set('trust proxy', 1);
     app.get('/health', (_req, res) => { res.json({ ok: true }); });
-    mountSite(app, { production: true });
+    mountSite(app, { production: true, host: 'www.saathi-app.com' });
     const s = app.listen(0);
     const b = `http://127.0.0.1:${(s.address() as AddressInfo).port}`;
     try {
       const plain = await fetch(b + '/pricing?x=1', { redirect: 'manual', headers: { 'x-forwarded-host': 'www.saathi-app.com', 'x-forwarded-proto': 'http' } });
       expect(plain.status).toBe(301);
       expect(plain.headers.get('location')).toBe('https://www.saathi-app.com/pricing?x=1');
-      expect((await fetch(b + '/pricing', { redirect: 'manual', headers: { 'x-forwarded-proto': 'https' } })).status).toBe(200);
+      const other = await fetch(b + '/pricing.html', { redirect: 'manual', headers: { 'x-forwarded-host': 'saathi-437e5bca391d.herokuapp.com', 'x-forwarded-proto': 'https' } });
+      expect(other.status).toBe(301);
+      expect(other.headers.get('location')).toBe('https://www.saathi-app.com/pricing.html');
+      expect((await fetch(b + '/pricing.html', { redirect: 'manual', headers: { 'x-forwarded-host': 'www.saathi-app.com', 'x-forwarded-proto': 'https' } })).status).toBe(200);
       expect((await fetch(b + '/health', { redirect: 'manual', headers: { 'x-forwarded-proto': 'http' } })).status).toBe(200);
     } finally { await new Promise<void>((r) => s.close(() => r())); }
   });

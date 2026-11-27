@@ -53,6 +53,12 @@ export interface PartnerAccess {
 
 export const previewEnd = (acceptedAt: Date): Date => new Date(acceptedAt.getTime() + PREVIEW_MS);
 
+/**
+ * One free window per person, not per invite: if she (or anyone else) invites the same person again, that
+ * person joins the window their first acceptance started, so the three days cannot be restarted.
+ */
+export const previewWindowFor = (priorEnd: Date | null | undefined, acceptedAt: Date): Date => priorEnd ?? previewEnd(acceptedAt);
+
 export function previewDaysLeft(previewEndsAt: Date | null | undefined, now: Date): number {
   if (!previewEndsAt) return 0;
   const ms = previewEndsAt.getTime() - now.getTime();

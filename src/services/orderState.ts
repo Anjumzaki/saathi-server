@@ -28,6 +28,17 @@ export function isRefundEligible(o: OrderTimes, now: Date, refundWindowHours: nu
   return now.getTime() - o.paidAt.getTime() >= refundWindowHours * HOUR;
 }
 
+/**
+ * When the automatic refund opens: `refundWindowHours` after payment, while nothing has been delivered.
+ * null when there is nothing to wait for (never paid, already delivered, or a finished order). The app shows
+ * the time left from this, so it never has to know the fee config.
+ */
+export function refundOpensAt(o: OrderTimes, refundWindowHours: number): Date | null {
+  if (!o.paidAt || o.deliveredAt) return null;
+  if (o.status !== 'paid' && o.status !== 'in_progress') return null;
+  return new Date(o.paidAt.getTime() + refundWindowHours * HOUR);
+}
+
 /** Release: the client can release a delivered order any time; otherwise it auto-releases after the payout delay. */
 export function canRelease(o: OrderTimes, now: Date, payoutDelayHours: number, byClient: boolean): boolean {
   if (o.status !== 'delivered' || !o.deliveredAt) return false;

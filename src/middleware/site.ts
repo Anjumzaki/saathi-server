@@ -1,3 +1,4 @@
+import compression from 'compression';
 import express, { type Express, type RequestHandler } from 'express';
 import helmet from 'helmet';
 import fs from 'node:fs';
@@ -33,7 +34,11 @@ const siteHelmet = helmet({
 const apiHelmet = helmet();
 
 /** Security headers: strict for the API, the site's own policy for pages. */
-export const securityHeaders: RequestHandler = (req, res, next) => (isApiPath(req.path) ? apiHelmet : siteHelmet)(req, res, next);
+export const securityHeaders: RequestHandler = (req, res, next) => {
+  if (!isApiPath(req.path)) return siteHelmet(req, res, next);
+  res.setHeader('X-Robots-Tag', 'noindex'); // API answers are never search results
+  apiHelmet(req, res, next);
+};
 
 /** Pages are checked again after five minutes so a deploy shows quickly; images and other files are kept for a day. */
 function cacheFor(res: express.Response, file: string): void {
@@ -41,7 +46,7 @@ function cacheFor(res: express.Response, file: string): void {
 }
 
 /** Mount the website. Call after the API routes and before the JSON not-found handler. */
-export function mountSite(app: Express, opts: { production: boolean }): void {
+export function mountSite(app: Express, opts: { production: boolean; host?: string | undefined }): void {
   if (!fs.existsSync(path.join(SITE_DIR, 'index.html'))) return; // API-only checkout
 
   // Heroku answers plain http too; pages should always be https.
@@ -52,7 +57,20 @@ export function mountSite(app: Express, opts: { production: boolean }): void {
     });
   }
 
-  // "/pricing" finds pricing.html, so links work with or without the ending.
+  // One address per page, so search engines never see the same page twice:
+  // the app's other host names go to the main one, "/index.html" to "/", and "/pricing" to "/pricing.html".
+  app.use((req, res, next) => {
+    if (isApiPath(req.path) || (req.method !== 'GET' && req.method !== 'HEAD')) return next();
+    const query = req.originalUrl.slice(req.path.length);
+    let target = req.path;
+    if (target === '/index.html') target = '/';
+    else if (/^\/[a-z0-9-]+$/.test(target) && fs.existsSync(path.join(SITE_DIR, `${target.slice(1)}.html`))) target += '.html';
+    const wrongHost = opts.production && !!opts.host && req.hostname !== opts.host;
+    if (!wrongHost && target === req.path) return next();
+    res.redirect(301, (wrongHost ? `https://${opts.host}` : '') + target + query);
+  });
+
+  app.use(compression());
   app.use(express.static(SITE_DIR, { extensions: ['html'], dotfiles: 'ignore', setHeaders: cacheFor }));
 
   // A page that does not exist gets the site's own 404; anything else falls through to the JSON one.

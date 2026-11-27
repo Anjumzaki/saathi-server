@@ -22,6 +22,8 @@ const schema = z.object({
   ADMIN_EMAILS: csv,
   CORS_ORIGINS: csv,
   APP_LINK_BASE: z.string().default('https://saathi-app.com'),
+  /** Main address of the website (e.g. www.saathi-app.com). When set, pages opened on any other host name are sent there. */
+  SITE_HOST: z.string().optional(),
   CONFIG_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).default(60),
   ALLOW_STUB_PROVIDERS: z
     .enum(['true', 'false'])

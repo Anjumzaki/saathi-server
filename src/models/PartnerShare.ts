@@ -41,8 +41,17 @@ export const VIEWER_STATUSES = ['active', 'paused'] as const;
  * With more than one share the latest window wins: one package covers every person she is cheering on.
  */
 export async function previewEndsAtForViewer(userId: string): Promise<Date | null> {
+  return findPreviewEnd(userId, -1);
+}
+
+/** The window this viewer's FIRST acceptance opened, so a second invite cannot hand them three fresh days. */
+export async function earliestPreviewEndsAtForViewer(userId: string): Promise<Date | null> {
+  return findPreviewEnd(userId, 1);
+}
+
+async function findPreviewEnd(userId: string, order: 1 | -1): Promise<Date | null> {
   const share = await PartnerShare.findOne({ partnerId: userId, status: { $in: VIEWER_STATUSES }, previewEndsAt: { $ne: null } })
-    .sort({ previewEndsAt: -1 })
+    .sort({ previewEndsAt: order })
     .select('previewEndsAt')
     .lean();
   return share?.previewEndsAt ?? null;
