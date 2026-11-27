@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { MongoRateStore } from './mongoRateStore';
 
 const base = { standardHeaders: true, legacyHeaders: false } as const;
 const body = { error: { code: 'too_many_requests', message: 'Too many requests, slow down.' } };
@@ -7,9 +8,9 @@ const body = { error: { code: 'too_many_requests', message: 'Too many requests, 
 export const authLimiter = rateLimit({ ...base, windowMs: 15 * 60_000, limit: 30, message: body });
 export const apiLimiter = rateLimit({ ...base, windowMs: 60_000, limit: 300, message: body });
 
-/** "Read with AI" costs money per call: 12 reads an hour per signed-in user (falls back to IP). */
+/** "Read with AI" costs money per call: 12 reads an hour per signed-in user. Counted in the database, so a restart or a second server does not reset it. */
 export const aiReadLimiter = rateLimit({
-  ...base, windowMs: 60 * 60_000, limit: 12,
+  ...base, windowMs: 60 * 60_000, limit: 12, store: new MongoRateStore('ai-read'),
   keyGenerator: (req) => ((req as { auth?: { userId?: string } }).auth?.userId) ?? 'anon',
   message: { error: { code: 'too_many_requests', message: "You've read a lot of plans this hour. Please try again a little later." } },
 });

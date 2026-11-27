@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Saathi Pro</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#F7F3FC;--surface:#FFFFFF;--surface2:#E6DCF2;--text:#3D2A32;--body:#5E5070;--muted:#7A6A8E;--head:#4A3663;--primary:#9575CD;--onprimary:#FFFFFF;--lilac:#E1BEE7;--rose:#F8BBD0;--gold:#C9A227;--cream:#F7E7B8;--golddeep:#5C4E10;--line:#E6DCF2;--shadow:0 2px 10px rgba(74,54,99,.06);--cta-shadow:0 8px 20px rgba(149,117,205,.3);--font:Poppins,"Segoe UI",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1E1627;--surface:#2E2340;--surface2:#3D2F55;--text:#F0DEE5;--body:#D9CDEB;--muted:#B9A7D6;--head:#E6D9FF;--primary:#CBB3E8;--onprimary:#2E1F42;--lilac:#4A3663;--rose:#7A2E52;--cream:#5C4E10;--golddeep:#F7E7B8;--line:#3D2F55;--shadow:0 2px 10px rgba(0,0,0,.3);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1E1627;--surface:#2E2340;--surface2:#3D2F55;--text:#F0DEE5;--body:#D9CDEB;--muted:#B9A7D6;--head:#E6D9FF;--primary:#CBB3E8;--onprimary:#2E1F42;--lilac:#4A3663;--rose:#7A2E52;--cream:#5C4E10;--golddeep:#F7E7B8;--line:#3D2F55;--shadow:0 2px 10px rgba(0,0,0,.3);color-scheme:dark}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.5}
+h1,h2,h3{margin:0;color:var(--head);text-wrap:balance;line-height:1.15}h1{font-size:clamp(34px,5.2vw,62px);font-weight:700}h2{font-size:clamp(26px,3.4vw,40px)}h3{font-size:18px;font-weight:600}
+p{margin:0;color:var(--body)}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.band{padding-block:clamp(56px,8vw,110px)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(14px)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--head);text-decoration:none;font-size:18px}
+.logo .pro{font-size:10px;font-weight:700;background:var(--primary);color:var(--onprimary);border-radius:6px;padding:2px 6px;letter-spacing:.04em}
+nav a{font-size:14px;font-weight:600;color:var(--head);text-decoration:none;margin-left:20px}@media (max-width:720px){nav a.hide{display:none}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 26px;border-radius:999px;background:var(--primary);color:var(--onprimary);font:600 16px var(--font);text-decoration:none;border:none;cursor:pointer;box-shadow:var(--cta-shadow)}
+.btn.ghost{background:transparent;color:var(--head);border:1.5px solid var(--primary);box-shadow:none}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding-block:clamp(32px,6vw,80px)}
+@media (max-width:860px){.hero .wrap,.grid2{grid-template-columns:1fr!important}}
+.lead{max-width:34rem;display:flex;flex-direction:column;gap:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.card{background:var(--surface);border-radius:22px;padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--surface2);font-size:13px;transform:translateX(-24px);opacity:0;transition:transform .6s cubic-bezier(.2,.7,.2,1),opacity .5s}
+.on .row{transform:none;opacity:1}
+.row .t{width:48px;font-weight:700;color:var(--primary);font-variant-numeric:tabular-nums;flex-shrink:0}
+.row b{color:var(--head)}
+.tag{font-size:9px;font-weight:700;border-radius:999px;padding:2px 7px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stats div{background:var(--surface2);border-radius:12px;padding:10px;font-size:11px;color:var(--muted)}.stats b{display:block;font-size:18px;color:var(--head)}
+.diff{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.diff div{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--surface2)}
+.chat{display:flex;flex-direction:column;gap:8px;font-size:13px}
+.them{align-self:flex-start;max-width:85%;background:var(--surface2);border-radius:16px 16px 16px 6px;padding:8px 12px}
+.me{align-self:flex-end;max-width:85%;background:var(--lilac);color:#3D2A32;border-radius:16px 16px 6px 16px;padding:8px 12px}
+table{border-collapse:collapse;width:100%;font-size:14px}th{text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:8px;border-bottom:1.5px solid var(--line)}td{padding:10px 8px;border-bottom:1px solid var(--line);color:var(--body);font-variant-numeric:tabular-nums}td b{color:var(--head)}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}@media (max-width:900px){.steps{grid-template-columns:1fr 1fr}}@media (max-width:520px){.steps{grid-template-columns:1fr}}
+.steps .card{gap:8px}.num{width:34px;height:34px;border-radius:999px;background:var(--lilac);color:#3D2A32;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.mas .eye{transform-origin:center;transform-box:fill-box;animation:blink 5s infinite}@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+footer{padding-block:40px;font-size:13px;color:var(--muted)}footer a{color:var(--muted);text-decoration:none;margin-right:16px}
+#applyForm input{min-width:0;width:100%}@media (max-width:560px){#applyForm{grid-template-columns:1fr!important}#applyForm input{grid-column:auto!important}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="description" content="Saathi Pro turns a dietitian's plan into alarm-style reminders in the client's phone, with swaps, photo logs and a weekly view of what was actually followed. Applications open before launch.">
+<link rel="canonical" href="https://www.saathi-app.com/pro.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Saathi">
+<meta property="og:title" content="Saathi Pro — your plans, delivered as reminders">
+<meta property="og:image" content="https://www.saathi-app.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.saathi-app.com/og.png">
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="pro.html"><span id="logoMas"></span>Saathi <span class="pro">PRO</span></a><nav><a class="hide" href="#how">How it works</a><a class="hide" href="#money">Earnings</a><a class="hide" href="dietitians.html">Directory</a><a class="hide" href="partners.html">Partners</a><a href="index.html">For clients</a></nav></div></header>
+
+<section class="hero"><div class="wrap">
+  <div class="lead"><div id="heroMas"></div><div class="eyebrow">For registered dietitians</div><h1>Your plan, in her pocket, ringing on time.</h1><p style="font-size:19px">Most plans die in a PDF. Saathi Pro turns yours into alarms, swaps and a weekly recap your client actually lives with, and shows you, every week, how it's going.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><a class="btn" href="#apply">Apply to join</a><a class="btn ghost" href="#how">See how it works</a></div><p style="font-size:13px">Verified within 2 working days &middot; you set your own prices &middot; paid out monthly in your currency</p><p style="font-size:13px"><b style="color:var(--head)">The marketplace opens with the app's launch.</b> Applications are open now, in waves, so the first clients arrive to a directory that isn't empty.</p></div>
+  <div class="card" data-anim><div class="eyebrow">Plan builder · A••• · week 1 of 4</div>
+    <div class="row"><span class="t">7:00</span><div><b>Warm water + 5 almonds</b><br>Vitamin D 1000 IU</div></div>
+    <div class="row" style="transition-delay:.1s"><span class="t">8:30</span><div><b>Breakfast · A / B / C</b><br>egg bhurji + roti · oats + yogurt · besan chilla</div></div>
+    <div class="row" style="transition-delay:.2s"><span class="t">11:00</span><div><b>Green tea + Iron</b><br>30 min apart · in her focus hours → always rings</div></div>
+    <div class="row" style="transition-delay:.3s"><span class="t">1:00</span><div><b>Lunch · A / B / C</b><br>lentils + salad · chicken + roti · roti + salan</div></div>
+    <div class="row" style="transition-delay:.4s"><span class="t">4:00</span><div><b>Snack</b> · fruit + boiled egg</div></div>
+    <div class="row" style="transition-delay:.5s"><span class="t">8:00</span><div><b>Dinner · A / B</b><br>grilled fish + veg · daal + roti</div></div>
+    <div class="stats"><div><b>6</b>items</div><div><b>3/3</b>mains have protein</div><div><b>4 h</b>longest gap</div><div><b>30 m</b>tea ↔ iron</div></div>
+    <a class="btn" href="#apply" style="height:48px;font-size:14px">Publish to Saathi</a>
+  </div>
+</div></section>
+
+<section class="band" id="how"><div class="wrap" style="display:flex;flex-direction:column;gap:32px">
+  <div class="lead"><div class="eyebrow">How it works</div><h2>From request to recap</h2></div>
+  <div class="steps">
+    <div class="card"><span class="num">1</span><h3>A request arrives</h3><p style="font-size:14px">With her intake already filled: goal, kitchen, cooking time, work hours, sleep. Never her cycle. Reply within 24 h to keep your Top match badge.</p></div>
+    <div class="card"><span class="num">2</span><h3>Build from a template</h3><p style="font-size:14px">Your own templates or the Saathi starter. Live structural check as you type: gaps, protein at each main, tea away from iron, dinner cutoff. Your numbers, if any, stay yours.</p></div>
+    <div class="card"><span class="num">3</span><h3>Publish with a diff</h3><p style="font-size:14px">She sees exactly what changed and keeps her reminder times where they match. Updates later work the same way, from chat.</p></div>
+    <div class="card"><span class="num">4</span><h3>Watch it land</h3><p style="font-size:14px">Her logs, swaps and photos in chat. A 15-minute call on your own Meet or WhatsApp link, booked around her quiet and focus hours.</p></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="wrap grid2">
+  <div class="card"><div class="eyebrow">Chat · A•••</div><div class="chat"><div class="them">I've seen week 1: 6 of 7 lunches on plan. How's the energy at 4?</div><div class="me">Still a dip. Had the snack early twice.</div><div class="them">Let's move the snack to 4:00 and add a boiled egg. Pushing it as an update.</div><div class="diff"><div><span class="tag" style="background:var(--lilac);color:#3D2A32">CHANGED</span>Snack 5:30 → 4:00</div><div><span class="tag" style="background:var(--cream);color:var(--golddeep)">NEW</span>+ 1 boiled egg</div></div><div class="me">📷 lunch today — guests, is this okay instead of lentils?</div></div></div>
+  <div class="lead"><div class="eyebrow">Stay in the loop</div><h2>Updates that reach her reminders, not her inbox</h2><p>Every change you send becomes a diff she reviews once. Photos she logs appear in your chat with the meal they replaced. You see effort, swaps and streaks; you never see cycle or Together data.</p></div>
+</div></section>
+
+<section class="band" id="money"><div class="wrap grid2">
+  <div class="lead"><div class="eyebrow">Earnings</div><h2>You set the price. Saathi takes a flat cut.</h2><p>Payment is held until your plan is delivered, then released 24 hours later. Clients get a refund only if nothing arrives within 72 hours.</p><p style="font-size:14px">Premium clients see your plan at 30% off. That discount is shared: you absorb 20 points, Saathi absorbs 10. Follow-ups at 50% off apply only to your own returning clients.</p></div>
+  <div class="card"><div class="eyebrow">Of your list price</div><table><tr><th>Client</th><th>Pays</th><th>Saathi</th><th>You receive</th></tr><tr><td><b>Free</b></td><td>100%</td><td>15%</td><td><b>85%</b></td></tr><tr><td><b>Premium</b></td><td>70%</td><td>5%</td><td><b>65%</b></td></tr><tr><td><b>Your follow-up</b></td><td>50%</td><td>5%</td><td><b>45%</b></td></tr></table><p style="font-size:12px">Monthly payout to your bank, in your currency. Tax document each year.</p><p style="font-size:12px">Indicative while we confirm the app stores' commission tier for paid professional services. Google Play or Apple take their fee before this split, and the final table will be in your Pro agreement &mdash; we will not change it quietly after you have joined.</p></div>
+</div></section>
+
+<section class="band" id="apply"><div class="wrap"><div class="card" style="max-width:720px;margin:0 auto;align-items:flex-start;gap:16px"><div class="eyebrow">Apply</div><h2>Verified dietitians only</h2><p>You'll need your degree, your registration or licence, and a government ID for identity only (deleted after review). Pick your specialities, languages and countries; set your prices per country.</p><form id="applyForm" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%"><input id="apName" placeholder="Full name" required style="height:48px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--text);font:500 14px var(--font)"><input id="apEmail" type="email" placeholder="Work email" required style="height:48px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--text);font:500 14px var(--font)"><input id="apReg" placeholder="Registration body &amp; number" style="height:48px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--text);font:500 14px var(--font);grid-column:1/-1"><button class="btn" type="submit" style="grid-column:1/-1">Request an invite</button></form><p id="applyMsg" style="font-size:13px;min-height:1.5em"></p></div></div></section>
+
+<footer><div class="wrap" style="display:flex;flex-wrap:wrap;gap:16px 32px;justify-content:space-between"><span>© 2026 Saathi Pro</span><span><a href="index.html">Saathi for clients</a><a href="dietitians.html">Directory</a><a href="plan-check.html">Plan check</a><a href="#money">Earnings</a><a href="#apply">Apply</a><a href="privacy.html">Privacy</a></span></div></footer>
+
+<script>
+function mascot(size){return '<svg class="mas" viewBox="0 0 120 120" width="'+size+'" height="'+size+'" aria-hidden="true"><ellipse cx="60" cy="72" rx="42" ry="38" fill="#E1BEE7"/><g transform="translate(86 30)"><circle cx="0" cy="-9" r="6" fill="#F8BBD0"/><circle cx="8.5" cy="-3" r="6" fill="#F8BBD0"/><circle cx="5.5" cy="7" r="6" fill="#F8BBD0"/><circle cx="-5.5" cy="7" r="6" fill="#F8BBD0"/><circle cx="-8.5" cy="-3" r="6" fill="#F8BBD0"/><circle cx="0" cy="0" r="4" fill="#C9A227"/></g><circle cx="40" cy="80" r="6" fill="#CBB3E8" opacity=".8"/><circle cx="80" cy="80" r="6" fill="#CBB3E8" opacity=".8"/><circle class="eye" cx="48" cy="68" r="3.8" fill="#2E1F42"/><circle class="eye" cx="72" cy="68" r="3.8" fill="#2E1F42"/><path d="M51 80 Q60 88 69 80" fill="none" stroke="#2E1F42" stroke-width="2.8" stroke-linecap="round"/></svg>'}
+document.getElementById('logoMas').innerHTML=mascot(30);document.getElementById('heroMas').innerHTML=mascot(96);
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.3});document.querySelectorAll('[data-anim]').forEach(el=>io.observe(el));
+/* Applications. Put your form endpoint here (Formspree, Google Form, your own API) and it will POST
+   {name, email, registration, source} as JSON. Left empty, the form opens the applicant's mail app. */
+var PRO_ENDPOINT='/v1/site/pro-application';
+document.getElementById('applyForm').addEventListener('submit',e=>{e.preventDefault();
+  const n=document.getElementById('apName').value.trim(),em=document.getElementById('apEmail').value.trim(),rg=document.getElementById('apReg').value.trim();
+  const msg=document.getElementById('applyMsg'),first=n?', '+n.split(' ')[0]:'';
+  const data={name:n,email:em,registration:rg,source:'pro'};
+  if(PRO_ENDPOINT){msg.textContent='Sending…';
+    fetch(PRO_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+      .then(r=>{msg.textContent=r.ok?('Thanks'+first+'. Invites open in waves; we will email you when yours is ready.'):'That did not send — write to pro@saathi-app.com instead.'})
+      .catch(()=>{msg.textContent='That did not send — write to pro@saathi-app.com instead.'});
+  }else{msg.textContent='Thanks'+first+'. Opening your mail app to send the application — or write to pro@saathi-app.com.';
+    location.href='mailto:pro@saathi-app.com?subject='+encodeURIComponent('Saathi Pro application')+'&body='+encodeURIComponent('Name: '+n+'\nWork email: '+em+'\nRegistration body & number: '+rg+'\n\nSpecialities:\nLanguages:\nCountries:\n');}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Join her on Saathi</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Open this invite in the Saathi app to cheer her on.">
+<meta property="og:site_name" content="Saathi">
+<meta property="og:title" content="Cheer me on in Saathi">
+<meta property="og:description" content="Tap to open Saathi and join. You see only what she chose to share.">
+<meta property="og:image" content="https://www.saathi-app.com/og.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#FFF8F4;--surface:#FFFFFF;--surface2:#F6E3EA;--text:#3D2A32;--body:#6D5560;--muted:#8E6A79;--head:#5A1E38;--primary:#BF4F7E;--onprimary:#FFFFFF;--rose:#F8BBD0}
+@media (prefers-color-scheme:dark){:root{--bg:#241820;--surface:#3C2B34;--surface2:#4E1230;--text:#F0DEE5;--body:#D9BFCB;--muted:#C9A9B6;--head:#FFD9E7;--primary:#F4A9C8;--onprimary:#5A1E38;--rose:#7A2E52}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:Poppins,"Segoe UI",system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px}
+main{width:100%;max-width:400px;background:var(--surface);border-radius:28px;padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+h1{margin:0;font-size:24px;line-height:1.2;color:var(--head)}
+p{margin:0;font-size:14px;line-height:1.55;color:var(--body)}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;border-radius:999px;background:var(--primary);color:var(--onprimary);font-weight:600;font-size:16px;text-decoration:none}
+.link{font-size:13px;font-weight:500;color:var(--muted);min-height:44px;display:flex;align-items:center}
+.code{width:100%;background:var(--surface2);border-radius:16px;padding:12px;font-size:12px;color:var(--head);word-break:break-all;user-select:all}
+.small{font-size:12px;color:var(--muted)}
+[hidden]{display:none}
+</style>
+</head>
+<body>
+<main>
+  <svg width="96" height="96" viewBox="0 0 120 120" role="img" aria-label="Saathi waving"><path d="M22 70 Q10 50 24 40" fill="none" stroke="#F48FB1" stroke-width="10" stroke-linecap="round"/><ellipse cx="60" cy="72" rx="42" ry="38" fill="#F8BBD0"/><g transform="translate(86 30)"><circle cx="0" cy="-9" r="6" fill="#E1BEE7"/><circle cx="8.5" cy="-3" r="6" fill="#E1BEE7"/><circle cx="5.5" cy="7" r="6" fill="#E1BEE7"/><circle cx="-5.5" cy="7" r="6" fill="#E1BEE7"/><circle cx="-8.5" cy="-3" r="6" fill="#E1BEE7"/><circle cx="0" cy="0" r="4" fill="#C9A227"/></g><circle cx="48" cy="68" r="3.8" fill="#5A1E38"/><circle cx="72" cy="68" r="3.8" fill="#5A1E38"/><path d="M51 80 Q60 88 69 80" fill="none" stroke="#5A1E38" stroke-width="2.8" stroke-linecap="round"/></svg>
+  <h1 id="title">She invited you to cheer her on</h1>
+  <p id="lead">Open the invite in Saathi. You will see only what she chose to share, and you can send one cheer a day.</p>
+  <a id="open" class="btn" href="#">Open in Saathi</a>
+  <a class="link" href="/download.html">I don't have Saathi yet</a>
+  <div id="fallback" hidden>
+    <p class="small">If the button does nothing, install Saathi, sign in, then tap this link again. Or paste this code in Profile › Share with someone › "I have an invite":</p>
+    <div class="code" id="code"></div>
+  </div>
+  <p id="bad" class="small" hidden>This invite link is incomplete. Ask her to send it again.</p>
+</main>
+<script>
+(function () {
+  var m = /[?&]token=([A-Za-z0-9_-]{10,200})/.exec(location.search);
+  var open = document.getElementById('open');
+  if (!m) {
+    open.hidden = true;
+    document.getElementById('bad').hidden = false;
+    document.getElementById('title').textContent = 'This invite did not open';
+    document.getElementById('lead').hidden = true;
+    return;
+  }
+  var deep = 'saathi://partner/join?token=' + m[1];
+  open.href = deep;
+  document.getElementById('code').textContent = m[1];
+  // Try once on arrival; if the app is not installed nothing happens and the page stays, with the code as a fallback.
+  setTimeout(function () { document.getElementById('fallback').hidden = false; }, 1500);
+  try { location.href = deep; } catch (e) {}
+})();
+</script>
+</body>
+</html>

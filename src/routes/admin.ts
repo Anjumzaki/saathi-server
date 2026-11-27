@@ -4,6 +4,7 @@ import type { Services } from '../interfaces';
 import { Dataset, UserOption } from '../models/Dataset';
 import { slugId } from '../services/datasetLogic';
 import { DietitianProfile } from '../models/DietitianProfile';
+import { LEAD_KINDS, Lead } from '../models/Lead';
 import { Order } from '../models/Order';
 import { FeeConfigModel, PackageConfig } from '../models/PackageConfig';
 import { applyDiscount } from '../services/money';
@@ -217,6 +218,13 @@ export function adminRoutes(s: Services): Router {
     // Existing users who typed this label keep working: map their user option id to the promoted id is a client concern
     // (the label now matches a seed option, so the add-option endpoint resolves to it).
     res.status(201).json({ option: { id, label: body.label } });
+  }));
+
+  /** Website forms: the launch list and Saathi Pro applications, newest first. */
+  r.get('/leads', asyncHandler(async (req, res) => {
+    const q = parse(z.object({ kind: z.enum(LEAD_KINDS).optional(), limit: z.coerce.number().int().min(1).max(500).default(200) }), req.query);
+    const leads = await Lead.find(q.kind ? { kind: q.kind } : {}).sort({ createdAt: -1 }).limit(q.limit).lean();
+    res.json({ leads });
   }));
 
   return r;

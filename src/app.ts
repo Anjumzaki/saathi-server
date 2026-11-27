@@ -1,11 +1,11 @@
 import cors from 'cors';
 import express, { type Express } from 'express';
-import helmet from 'helmet';
 import { getEnv } from './config/env';
 import type { Services } from './interfaces';
 import { requireAuth, requireRole } from './middleware/auth';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { apiLimiter, authLimiter } from './middleware/rateLimit';
+import { mountSite, securityHeaders } from './middleware/site';
 import { accountRoutes } from './routes/account';
 import { adminRoutes } from './routes/admin';
 import { authRoutes } from './routes/auth';
@@ -15,6 +15,7 @@ import { orderRoutes } from './routes/orders';
 import { partnerRoutes } from './routes/partner';
 import { planRoutes } from './routes/plans';
 import { regionRoutes } from './routes/region';
+import { siteRoutes } from './routes/site';
 import { packagesRoutes, subscriptionRoutes } from './routes/subscription';
 import { syncRoutes } from './routes/sync';
 import { log } from './utils/logger';
@@ -25,7 +26,7 @@ export function createApp(services: Services): Express {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1); // Heroku / AWS load balancer: correct client IP for rate limiting
-  app.use(helmet());
+  app.use(securityHeaders);
   if (env.CORS_ORIGINS.length) app.use(cors({ origin: env.CORS_ORIGINS }));
   // Plan documents (PDF / photo as base64) are the only large request.
   app.use('/v1/plans/import-ai', express.json({ limit: '12mb' }));
@@ -49,6 +50,7 @@ export function createApp(services: Services): Express {
   v1.use('/datasets', datasetRoutes());
   v1.use('/region', regionRoutes());
   v1.use('/packages', packagesRoutes());
+  v1.use('/site', siteRoutes());
   v1.use('/dietitians', (req, res, next) => (req.method === 'GET' && (req.path === '/' || /^\/[a-f0-9]{24}$/.test(req.path)) ? next() : requireAuth(req, res, next)), dietitianRoutes());
   v1.use('/me', requireAuth, accountRoutes());
   v1.use('/sync', requireAuth, syncRoutes());
@@ -58,6 +60,9 @@ export function createApp(services: Services): Express {
   v1.use('/partner', requireAuth, partnerRoutes());
   v1.use('/admin', requireAuth, requireRole('admin'), adminRoutes(services));
   app.use('/v1', v1);
+
+  // The marketing website shares this app (saathi-app.com); the API stays under /v1.
+  mountSite(app, { production: env.NODE_ENV === 'production' });
 
   app.use(notFoundHandler);
   app.use(errorHandler);

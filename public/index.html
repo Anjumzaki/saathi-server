@@ -1,0 +1,570 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta name="description" content="Saathi turns your diet plan into alarm-style meal reminders that don't get swiped away, swaps from your own kitchen, a walk after every meal, and your dietitian in the same place. Android and iPhone.">
+<link rel="canonical" href="https://www.saathi-app.com/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cellipse cx='60' cy='72' rx='42' ry='38' fill='%23F8BBD0'/%3E%3Ccircle cx='48' cy='68' r='4' fill='%235A1E38'/%3E%3Ccircle cx='72' cy='68' r='4' fill='%235A1E38'/%3E%3Cpath d='M51 80 Q60 88 69 80' fill='none' stroke='%235A1E38' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Saathi">
+<meta property="og:title" content="Saathi — a plan you'll actually follow">
+<meta property="og:description" content="Alarm-style meal reminders that don't get swiped away, swaps from your own kitchen, a walk after every meal, and your dietitian in the same place.">
+<meta property="og:url" content="https://www.saathi-app.com/">
+<meta property="og:image" content="https://www.saathi-app.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Saathi — a plan you'll actually follow">
+<meta name="twitter:description" content="Meal alarms that ring until you answer, swaps from your own kitchen, and a walk after every meal.">
+<meta name="twitter:image" content="https://www.saathi-app.com/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Saathi","url":"https://www.saathi-app.com/","logo":"https://www.saathi-app.com/og.png"},{"@type":"WebSite","name":"Saathi","url":"https://www.saathi-app.com/"},{"@type":"MobileApplication","name":"Saathi","applicationCategory":"HealthApplication","operatingSystem":"Android 8.0+, iOS 16+","description":"A diet-plan companion with alarm-style meal reminders, same-category swaps, post-meal walks, strength and yoga slots, and cycle-aware guidance.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}]}</script>
+</head><body>
+<title>Saathi — a plan you&#39;ll actually follow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one long scroll = one day. Scroll position scrubs the sky from morning cream to plum night; a sticky phone in the day section swaps screens as text passes. */
+:root{
+  --bg:#FFF8F4; --surface:#FFFFFF; --surface2:#F6E3EA; --text:#3D2A32; --body:#6D5560; --muted:#8E6A79; --head:#5A1E38;
+  --primary:#BF4F7E; --onprimary:#FFFFFF; --rose:#F8BBD0; --blush:#F48FB1; --lilac:#E1BEE7; --lav:#9575CD; --lavdeep:#4A3663; --gold:#C9A227; --cream:#F7E7B8; --golddeep:#5C4E10; --time:#B0456F; --line:#F6E3EA;
+  --shadow:0 2px 10px rgba(90,30,56,.05); --cta-shadow:0 8px 20px rgba(191,79,126,.25);
+  --phone-bg:#FFF8F4; --phone-dark:#3C2B34; --phone-text:#3D2A32;
+  --sky:var(--bg);
+  --font:Poppins,"Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#241820;--surface:#3C2B34;--surface2:#4E1230;--text:#F0DEE5;--body:#D9BFCB;--muted:#C9A9B6;--head:#FFD9E7;--primary:#F4A9C8;--onprimary:#5A1E38;--rose:#F4A9C8;--lilac:#CBB3E8;--gold:#E8CD7A;--cream:#5C4E10;--golddeep:#F7E7B8;--time:#F4A9C8;--line:#4E1230;--shadow:0 2px 10px rgba(0,0,0,.25);--cta-shadow:0 8px 20px rgba(244,169,200,.2);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#241820;--surface:#3C2B34;--surface2:#4E1230;--text:#F0DEE5;--body:#D9BFCB;--muted:#C9A9B6;--head:#FFD9E7;--primary:#F4A9C8;--onprimary:#5A1E38;--rose:#F4A9C8;--lilac:#CBB3E8;--gold:#E8CD7A;--cream:#5C4E10;--golddeep:#F7E7B8;--time:#F4A9C8;--line:#4E1230;--shadow:0 2px 10px rgba(0,0,0,.25);--cta-shadow:0 8px 20px rgba(244,169,200,.2);color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--sky);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.5;transition:background .4s linear,color .5s}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--sky)}
+a{color:var(--primary)}
+h1,h2,h3{margin:0;color:var(--head);text-wrap:balance;line-height:1.15}
+h1{font-size:clamp(34px,5.4vw,66px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(28px,3.6vw,44px);font-weight:700}
+h3{font-size:18px;font-weight:600}
+p{margin:0;color:var(--body)}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.band{padding-block:clamp(56px,9vw,120px)}
+.band .wrap{display:grid;gap:40px}
+.lead{max-width:34rem}
+.lead p{margin-top:12px;font-size:18px}
+.lead h2{margin-top:8px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 26px;border-radius:999px;background:var(--primary);color:var(--onprimary);font:600 16px var(--font);text-decoration:none;border:none;cursor:pointer;box-shadow:var(--cta-shadow);transition:transform .2s ease-out,filter .2s;position:relative;overflow:hidden}
+.btn:active{transform:scale(.97)}.btn:active::after{content:"";position:absolute;inset:0;background:rgba(90,30,56,.08)}
+.btn.ghost{background:transparent;color:var(--head);box-shadow:none;border:1.5px solid var(--rose)}
+.btn.sm{height:40px;padding:0 16px;font-size:13px;box-shadow:none}
+.btn:focus-visible,.chip:focus-visible,a:focus-visible{outline:3px solid var(--lav);outline-offset:3px}
+.store{display:inline-flex;align-items:center;gap:10px;height:56px;padding:0 20px;border-radius:16px;background:var(--head);color:var(--bg);text-decoration:none;font:500 13px var(--font);line-height:1.1}
+.store b{display:block;font-size:16px;font-weight:600}
+.store svg{width:24px;height:24px;flex-shrink:0}
+
+/* header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;backdrop-filter:blur(14px);background:color-mix(in srgb,var(--sky) 80%,transparent);transition:background .4s}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--head);text-decoration:none;font-size:18px}
+.logo svg{width:30px;height:30px}
+nav{display:flex;gap:22px;align-items:center}
+nav a{font-size:14px;font-weight:600;color:var(--head);text-decoration:none}
+nav a.pro{color:var(--lav)}
+.clock{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px 0 8px;border-radius:999px;background:var(--surface2);color:var(--head);font-size:12px;font-weight:600;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis}
+.clock svg{width:18px;height:18px;flex-shrink:0}
+.clock .t{font-variant-numeric:tabular-nums}
+@media (max-width:860px){nav .hide{display:none}}
+@media (max-width:560px){#clockMsg{display:none}.clock{max-width:none}}
+nav{min-width:0}
+
+/* hero */
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding-block:clamp(32px,6vw,80px)}
+@media (max-width:860px){.hero .wrap{grid-template-columns:1fr}}
+.hero-copy{display:flex;flex-direction:column;gap:20px}
+.hero-copy .mas{width:120px;height:120px}
+.ctas{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.ring-btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:1.5px dashed var(--rose);background:transparent;color:var(--primary);font:600 13px var(--font);cursor:pointer}
+.ring-btn svg{width:16px;height:16px}
+
+/* phone */
+.phone{width:300px;height:620px;border-radius:44px;background:var(--phone-dark);padding:10px;position:relative;box-shadow:0 30px 60px rgba(90,30,56,.22),0 0 0 1px rgba(255,255,255,.08) inset;flex-shrink:0;margin:0 auto}
+.phone::before{content:"";position:absolute;top:18px;left:50%;transform:translateX(-50%);width:88px;height:26px;border-radius:999px;background:#120A0F;z-index:3}
+.screen{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:var(--phone-bg);color:var(--phone-text);font-size:12px}
+.scr{position:absolute;inset:0;padding:54px 18px 24px;display:flex;flex-direction:column;gap:12px;opacity:0;transform:translateY(8px);transition:opacity .4s ease-out,transform .4s ease-out;pointer-events:none;background:var(--phone-bg);color:#3D2A32}
+.scr.on{opacity:1;transform:none;pointer-events:auto}
+.scr.dark{background:#3C2B34;color:#F0DEE5}
+.scr .eb{font-size:10px;font-weight:600;letter-spacing:.05em;color:#8E6A79}
+.scr.dark .eb{color:#C9A9B6}
+.scr .big{font-size:22px;font-weight:700;color:#5A1E38;line-height:1.2}
+.scr.dark .big{color:#FFD9E7}
+.scr .sub{font-size:12px;color:#6D5560;line-height:1.45}
+.scr.dark .sub{color:#CBB3E8}
+.card{background:#fff;border-radius:16px;padding:10px 12px;box-shadow:0 2px 10px rgba(90,30,56,.05);display:flex;align-items:center;gap:10px;font-size:12px;color:#3D2A32}
+.scr.dark .card{background:rgba(255,248,244,.08);color:#F0DEE5;box-shadow:none}
+.circ{width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.circ svg{width:18px;height:18px;fill:none;stroke:#5A1E38;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pill{height:46px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;border:none;cursor:pointer;font-family:var(--font)}
+.pill.p{background:#BF4F7E;color:#fff;box-shadow:0 8px 20px rgba(191,79,126,.3)}
+.pill.s{background:rgba(255,248,244,.1);color:#F0DEE5;border:1.5px solid #7A2E52}
+.pill.l{background:#F6E3EA;color:#5A1E38}
+.tag{font-size:9px;font-weight:700;border-radius:999px;padding:2px 7px}
+.halo{position:absolute;left:50%;top:170px;width:170px;height:170px;border-radius:50%;transform:translateX(-50%);background:radial-gradient(circle,#F8BBD0 0%,rgba(248,187,208,0) 70%);animation:halo 1.2s ease-in-out infinite;pointer-events:none}
+@keyframes halo{0%,100%{transform:translateX(-50%) scale(1);opacity:.9}50%{transform:translateX(-50%) scale(1.25);opacity:.4}}
+.mas-wrap{display:flex;justify-content:center;position:relative;z-index:1}
+.mas{animation:float 3.2s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.mas .eye{transform-origin:center;transform-box:fill-box;animation:blink 5s infinite}
+.mas .eye.r{animation-delay:.05s}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.mas .arm.wave{transform-origin:100% 100%;transform-box:fill-box;animation:wave 1.6s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-16deg)}}
+.mas .arm.cheer{transform-origin:50% 100%;transform-box:fill-box;animation:cheer 1s ease-in-out infinite}
+@keyframes cheer{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-10px;width:8px;height:12px;border-radius:2px;animation:fall 1.2s ease-in forwards}
+@keyframes fall{to{transform:translateY(640px) rotate(540deg);opacity:0}}
+.toast{position:absolute;left:18px;right:18px;bottom:24px;background:#3D2A32;color:#FFF8F4;border-radius:999px;padding:10px 16px;font-size:12px;display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(10px);transition:.3s}
+.toast.on{opacity:1;transform:none}
+.ring{width:100%;height:auto}
+.day-path{display:flex;flex-direction:column;gap:8px}
+.day-path div{display:flex;align-items:center;gap:8px;font-size:11px}
+.day-path .t{width:38px;font-weight:700;color:#B0456F;font-size:10px;font-variant-numeric:tabular-nums}
+.node{width:22px;height:22px;border-radius:999px;background:#F6E3EA;flex-shrink:0}
+.node.done{background:#BF4F7E}.node.now{border:2.5px solid #BF4F7E;background:#fff}
+.cup{width:14px;height:20px;border-radius:3px 3px 5px 5px;background:#F6E3EA}.cup.f{background:#9575CD}
+
+/* day scroll */
+.day .wrap{display:grid;grid-template-columns:1fr 340px;gap:48px;align-items:start}
+@media (max-width:860px){.day .wrap{grid-template-columns:1fr}.day .stick{position:sticky;top:76px;z-index:2;padding:8px 0}.phone.small{width:220px;height:456px;border-radius:34px}.phone.small .screen{border-radius:26px}.phone.small .scr{padding:40px 12px 16px;font-size:10px}.phone.small .big{font-size:17px}}
+.day .stick{position:sticky;top:90px}
+.steps{display:flex;flex-direction:column;gap:clamp(140px,28vh,260px);padding-block:120px}
+.step{max-width:30rem;opacity:.35;transition:opacity .4s}
+.step.on{opacity:1}
+.step .time{font-size:13px;font-weight:700;color:var(--time);font-variant-numeric:tabular-nums}
+.step h3{font-size:clamp(22px,2.6vw,30px);margin-top:6px;font-weight:700}
+.step p{margin-top:10px}
+
+/* feature sections */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media (max-width:900px){.grid2,.grid4{grid-template-columns:1fr}.grid4{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.grid4{grid-template-columns:1fr}}
+.fcard{background:var(--surface);border-radius:22px;padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;min-width:0;transition:transform .6s cubic-bezier(.2,.7,.2,1),opacity .6s}
+.fcard .ic{width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.fcard .ic svg{width:22px;height:22px;fill:none;stroke:#5A1E38;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fcard p{font-size:14px}
+.fan .fcard{transform:translateX(calc(var(--i) * -40px)) rotate(calc(var(--i) * -1.2deg));opacity:.75}
+.fan.on .fcard{transform:none;opacity:1}
+.badge{align-self:flex-start;font-size:10px;font-weight:700;letter-spacing:.04em;border-radius:999px;padding:3px 9px;background:var(--cream);color:var(--golddeep);transform:scale(1.6) rotate(-8deg);opacity:0;transition:transform .5s cubic-bezier(.2,.9,.3,1.4) .5s,opacity .3s .5s}
+.fan.on .badge{transform:none;opacity:1}
+.stack{position:relative;height:230px}
+.ncard{position:absolute;left:0;right:0;background:var(--surface);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;font-size:13px;transition:transform .7s cubic-bezier(.2,.7,.2,1),opacity .6s}
+.ncard b{color:var(--head);font-size:14px}
+.ncard small{color:var(--muted);font-size:11px}
+.stack .ncard:nth-child(1){top:0}.stack .ncard:nth-child(2){top:70px}.stack .ncard:nth-child(3){top:140px}
+.stack.on .ncard:nth-child(2){transform:translateY(-62px) scale(.96);opacity:0}.stack.on .ncard:nth-child(3){transform:translateY(-132px) scale(.92);opacity:0}
+.stack .bundle{position:absolute;top:0;left:0;right:0;opacity:0;transform:translateY(10px);transition:.5s .5s;background:var(--lilac);color:#3D2A32;border-radius:18px;padding:12px 14px;font-size:13px;display:flex;gap:10px;align-items:center}
+.stack.on .bundle{opacity:1;transform:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);color:var(--head);font:500 13px var(--font);cursor:pointer;transition:transform .4s cubic-bezier(.2,.7,.2,1),background .2s}
+.chip.on{background:var(--lilac);border-color:transparent;color:#3D2A32;font-weight:600}
+.chip.ok{background:var(--lilac);color:#3D2A32;border-color:transparent}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--head);margin-top:12px}
+.check i{width:22px;height:22px;border-radius:999px;background:var(--lilac);display:inline-flex;align-items:center;justify-content:center}
+.twophones{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.twophones .phone{width:220px;height:456px;border-radius:34px}.twophones .screen{border-radius:26px}.twophones .scr{padding:40px 12px 16px;font-size:10px}.twophones .big{font-size:17px}
+.lavband{background:linear-gradient(135deg,#9575CD,#4A3663);color:#F0DEE5}
+.lavband h2,.lavband .eyebrow{color:#F0DEE5}.lavband p{color:#DCCFF0}
+.lavband .btn{background:#F0DEE5;color:#4A3663;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+.price{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:760px}
+@media (max-width:700px){.price{grid-template-columns:1fr}}
+.plan{background:var(--surface);border-radius:22px;padding:24px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;position:relative}
+.plan.prem{border:2px solid var(--rose)}
+.plan .amt{font-size:34px;font-weight:700;color:var(--head);font-variant-numeric:tabular-nums}
+.plan .amt small{font-size:13px;font-weight:500;color:var(--muted)}
+.plan ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--body)}
+.plan li{display:flex;gap:8px;align-items:flex-start}
+.plan li::before{content:"";width:16px;height:16px;border-radius:999px;background:var(--lilac);flex-shrink:0;margin-top:3px}
+.peek{position:absolute;right:18px;top:-46px;width:72px;height:72px}
+.seg{display:inline-flex;height:40px;border-radius:999px;background:var(--surface2);padding:3px}
+.seg button{border:none;background:transparent;padding:0 16px;border-radius:999px;font:600 13px var(--font);color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--surface);color:var(--head)}
+footer{padding-block:48px;font-size:13px;color:var(--muted)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px 32px;justify-content:space-between;align-items:center}
+footer a{color:var(--muted);text-decoration:none;margin-right:16px}
+.sketch{display:grid;grid-template-columns:1fr 340px;gap:40px;align-items:start}
+@media (max-width:860px){.sketch{grid-template-columns:1fr}}
+.sketch .q{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.sketch .q .eyebrow{font-size:11px}
+.privacy-list{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:700px){.privacy-list{grid-template-columns:1fr}}
+.pv{background:var(--surface);border-radius:18px;padding:16px;box-shadow:var(--shadow);font-size:14px;color:var(--body)}
+.pv b{display:block;color:var(--head);margin-bottom:4px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Saathi home"><span id="logoMas"></span>Saathi</a>
+    <nav>
+      <a class="hide" href="features.html">Features</a>
+      <a class="hide" href="plan-check.html">Check my plan</a>
+      <a class="hide" href="dietitians.html">Dietitians</a>
+      <a class="hide" href="recipes.html">Recipes</a>
+      <a class="hide" href="blog.html">Blog</a>
+      <a class="hide" href="pricing.html">Pricing</a>
+      <a class="pro" href="pro.html">For dietitians</a>
+      <span class="clock" id="clock" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="t" id="clockT">--:--</span><span id="clockMsg"></span></span>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-copy">
+      <div class="mas" id="heroMas" aria-hidden="true"></div>
+      <h1>A plan you'll actually follow.</h1>
+      <p style="font-size:19px;max-width:32rem">Alarm-style meal reminders that don't get swiped away, swaps from your own kitchen, progress that encourages, and your dietitian in the same place. Saathi means companion. That's the whole idea.</p>
+      <div class="ctas">
+        <a class="store" href="download.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3.5v17l10-8.5zM14.2 13.2l2.8 2.9 3.5-2a1 1 0 0 0 0-1.7l-3.5-2zM13.9 11.1l2.5-2.5L4.6 2.2zM4.6 21.8l11.8-6.4-2.5-2.5z"/></svg><span>Get it on<b>Google Play</b></span></a>
+        <a class="store" href="download.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.4 2-3.5 2.1-3.6-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3.1 2.4 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8 2.2-1.2 3-2.4c.9-1.4 1.3-2.7 1.3-2.8 0 0-2.6-1-2.7-3.9zM14 5.5c.7-.8 1.1-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z"/></svg><span>Download on the<b>App Store</b></span></a>
+        <a class="btn ghost sm" href="plan-check.html">Check my plan, free</a>
+        <a class="btn ghost sm" href="pro.html">I'm a dietitian</a>
+      </div>
+      <div><button class="ring-btn" id="ringBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg>Ring my alarm for my next meal</button></div>
+    </div>
+    <div class="phone" id="heroPhone">
+      <div class="screen">
+        <div class="scr dark on" id="hsAlarm" style="align-items:center;text-align:center;justify-content:space-between">
+          <div class="eb" id="hsTime">1:00 PM · LUNCH</div>
+          <div class="halo"></div>
+          <div class="mas-wrap" id="hsMas"></div>
+          <div><div class="big">Lunch time</div><div class="sub" id="hsMeal">Lentils + salad. Option C if you'd rather: roti + salan.</div></div>
+          <div style="display:flex;flex-direction:column;gap:8px;width:100%">
+            <button class="pill p" id="hsEaten" type="button">I ate it</button>
+            <div style="display:flex;gap:8px"><button class="pill s" style="flex:1" id="hsSwap" type="button">Swap</button><button class="pill s" style="flex:1" id="hsSnooze" type="button">Snooze 10</button></div>
+          </div>
+        </div>
+        <div class="scr" id="hsCeleb" style="align-items:center;text-align:center;justify-content:center;gap:16px">
+          <div class="confetti" id="confetti"></div>
+          <div class="mas-wrap" id="hsMas2"></div>
+          <div class="big">Lovely. That's 4 of 5.</div>
+          <div class="sub">Snack at 4:00. I'll be quiet till then.</div>
+          <a class="pill p" style="text-decoration:none;width:100%" href="#pricing">Get Saathi</a>
+          <button class="pill l" style="width:100%" id="hsAgain" type="button">Ring it again</button>
+        </div>
+        <div class="scr" id="hsSwapS" style="justify-content:flex-end;background:#3C2B34">
+          <div style="background:#FFF8F4;border-radius:24px 24px 0 0;margin:0 -18px -24px;padding:16px 18px 24px;display:flex;flex-direction:column;gap:10px;color:#3D2A32">
+            <div style="width:36px;height:4px;border-radius:999px;background:#F6E3EA;align-self:center"></div>
+            <div class="big" style="font-size:18px">Ate something else?</div>
+            <div class="sub">Same category, from your usual foods.</div>
+            <div class="chips" id="hsChips"></div>
+            <button class="pill p" id="hsSwapDone" type="button">Log roti + salan</button>
+          </div>
+        </div>
+        <div class="toast" id="hsToast"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="day" id="day">
+  <div class="wrap">
+    <div class="steps" id="steps">
+      <div class="lead" style="margin-bottom:-40px"><div class="eyebrow">A day with Saathi</div><h2>Scroll through one day. The phone follows.</h2><p>Every screen below is the real app, not a video. Keep scrolling and the light changes with the hours.</p></div>
+      <div class="step on" data-scr="wake"><div class="time">7:00 AM</div><h3>It rings like an alarm, because it is one</h3><p>A meal you were going to skip shouldn't be a notification you can swipe away. Wake and meals use the phone's alarm channel: full screen, over the lock screen, until you answer.</p></div>
+      <div class="step" data-scr="bfast"><div class="time">8:30 AM</div><h3>Breakfast, with two ways out</h3><p>"I ate it" or "something else". Snooze exists, but after the third one the button turns into Skip today. No guilt, no nagging loop.</p></div>
+      <div class="step" data-scr="move"><div class="time">10:15 AM</div><h3>Little nudges stay little</h3><p>Water, a stretch, the walk window when the air is good. These bundle into one soft card. Only meals ring.</p></div>
+      <div class="step" data-scr="focus"><div class="time">11:00 AM</div><h3>Focus hours. Shh.</h3><p>Tell Saathi when you work, from home or the office. Inside that window reminders go silent, wait, or let only meals through. Your call, and a one-tap day off.</p></div>
+      <div class="step" data-scr="swap"><div class="time">1:00 PM</div><h3>Swap, don't cheat</h3><p>Guests came. You had roti and salan instead of lentils. Pick it from the sheet and the plan just continues. The structural check stays green.</p></div>
+      <div class="step" data-scr="walk"><div class="time">5:30 PM</div><h3>Green tea, then a walk</h3><p>Ten minutes after a main meal, Saathi suggests a walk of 15 to 25 minutes, scaled to how far you are from your step goal. Too hot, raining, dark or bad air, and it offers your indoor option instead.</p></div>
+      <div class="step" data-scr="cycle"><div class="time">7:00 PM</div><h3>Cycle-aware, quietly</h3><p>Seed cycling changes phase, the monthly check-in asks one question, and Together shows up on the lock screen as a heart. Never as words.</p></div>
+      <div class="step" data-scr="bed"><div class="time">11:00 PM</div><h3>Wind down</h3><p>Dinner done by your dietitian's cutoff, water stops at ten, and the phone goes plum. Same time every night helps.</p></div>
+      <div class="step" data-scr="night"><div class="time">11:10 PM</div><h3>Tonight's recap, tomorrow's fresh start</h3><p>Seven of nine. Not a score, a sentence. Nothing you missed follows you into tomorrow.</p></div>
+      <div class="step" data-scr="week"><div class="time">Sunday 9:00 AM</div><h3>One minute a week</h3><p>The recap shows the shape of your week and asks for one small thing for the next. That's the only planning you'll ever do.</p></div>
+    </div>
+    <div class="stick">
+      <div class="phone small" id="dayPhone"><div class="screen" id="dayScreens"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="plans">
+  <div class="wrap">
+    <div class="lead"><div class="eyebrow">Your plan, your way</div><h2>Four doors into the same companion</h2><p>However the plan arrives, it lands in the same reminders, the same swaps, the same recap.</p></div>
+    <div class="grid4 fan" data-anim>
+      <div class="fcard" style="--i:0"><span class="ic" style="background:var(--lilac)"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></span><h3>From a dietitian</h3><p><b style="color:var(--head)">Coming soon.</b> Browse verified dietitians, pay in-app, and get a four-week plan delivered straight into your reminders. Follow-ups with the same dietitian at half price.</p></div>
+      <div class="fcard" style="--i:1"><span class="ic" style="background:var(--rose)"><svg viewBox="0 0 24 24"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></svg></span><h3>Build with Saathi</h3><p>Height, weight, your day, your kitchen. Saathi spaces five eating moments around your real schedule. No calorie logging, ever.</p></div>
+      <div class="fcard" style="--i:2"><span class="ic" style="background:var(--cream)"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg></span><h3>Write my own</h3><p>Type what you eat and when. Saathi checks the structure: gaps, protein at each main, tea away from iron, dinner cutoff. Apply or keep each tweak.</p></div>
+      <div class="fcard" style="--i:3"><span class="badge">PREMIUM · COMING</span><span class="ic" style="background:var(--surface2)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8M12 8v8"/></svg></span><h3>Read with AI</h3><p>Photograph the plan your doctor gave you. Saathi reads the meals, times and supplements into reminders, and you confirm each one.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap grid2">
+    <div class="lead"><div class="eyebrow">Reminders that respect you</div><h2>Two tiers. Meals ring, everything else whispers.</h2><p>Eight notification channels you can mute one by one. Nudges bundle. Nothing rings during prayer times or your focus hours unless you asked it to.</p>
+      <div class="check"><i><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3D2A32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i>Max 12 non-alarm notifications a day</div>
+      <div class="check"><i><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3D2A32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i>Missed becomes "still waiting", never "failed"</div>
+    </div>
+    <div>
+      <div class="stack" data-anim>
+        <div class="bundle"><span id="shhMas" style="width:40px;height:40px;display:inline-block"></span><span><b>Saathi · 3 nudges</b><br><small>Water, stretch, walk window. Silent till 5:00.</small></span></div>
+        <div class="ncard"><b>Time to move a little</b><small>Stand up, stretch, and a sip of water.</small></div>
+        <div class="ncard"><b>Good air for the next hour</b><small>A 25-min walk fits before sunset.</small></div>
+        <div class="ncard"><b>Water · 3 of 9 cups</b><small>Log a glass</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap grid2">
+    <div>
+      <div class="fcard" style="max-width:420px">
+        <div class="eyebrow">Ate something else?</div>
+        <div class="chips" id="swapChips" data-anim></div>
+        <div class="check" id="swapCheck"><i><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3D2A32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></i>Same category · protein kept · plan continues</div>
+      </div>
+    </div>
+    <div class="lead"><div class="eyebrow">Swap, don't cheat</div><h2>Life happens. The plan bends.</h2><p>Swaps come from your own usual foods, in the same category as the meal you missed. Saathi logs it as "something else" so your dietitian sees it too. There is no red anywhere in this app.</p></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap grid2">
+    <div class="lead"><div class="eyebrow">Cycle-aware</div><h2>It knows which week it is. Nobody else does.</h2><p>Seed cycling cards change with your phase. A monthly check-in asks one question. Together, the module for the two of you, shows on the lock screen as a heart and nothing more. Cycle data is never shown to a dietitian or a partner.</p></div>
+    <div style="display:flex;justify-content:center"><svg class="ring" viewBox="0 0 240 240" width="260" data-anim id="cycleRing" role="img" aria-label="28-day cycle ring"><circle cx="120" cy="120" r="96" fill="none" stroke="var(--surface2)" stroke-width="18"/><circle id="cycleArc" cx="120" cy="120" r="96" fill="none" stroke="var(--lav)" stroke-width="18" stroke-linecap="round" stroke-dasharray="603" stroke-dashoffset="603" transform="rotate(-90 120 120)" style="transition:stroke-dashoffset 2.2s cubic-bezier(.2,.7,.2,1)"/><text x="120" y="112" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="var(--muted)">DAY</text><text id="cycleDay" x="120" y="146" text-anchor="middle" font-family="Poppins,sans-serif" font-size="36" font-weight="700" fill="var(--head)">1</text><text id="cyclePhase" x="120" y="172" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="var(--lav)">flax + pumpkin</text></svg></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap grid2">
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:center">
+      <svg viewBox="0 0 160 160" width="170" data-anim id="effortRing" role="img" aria-label="Effort ring"><circle cx="80" cy="80" r="64" fill="none" stroke="var(--surface2)" stroke-width="14"/><circle id="effortArc" cx="80" cy="80" r="64" fill="none" stroke="var(--primary)" stroke-width="14" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402" transform="rotate(-90 80 80)" style="transition:stroke-dashoffset 1.8s cubic-bezier(.2,.7,.2,1)"/><text id="effortNum" x="80" y="92" text-anchor="middle" font-family="Poppins,sans-serif" font-size="38" font-weight="700" fill="var(--head)">0</text></svg>
+      <div style="display:flex;gap:6px" id="weekPills" aria-hidden="true"></div>
+    </div>
+    <div class="lead"><div class="eyebrow">Progress that encourages</div><h2>An effort score, not a verdict</h2><p>The ring fills with what you did, not what you weighed. Sunday brings a one-minute recap and one small thing for next week. Missed days say "fresh start tomorrow", and mean it.</p></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="lead"><div class="eyebrow">Movement, without becoming a gym app</div><h2>A walk after the meal. Strength and yoga, slotted in for you.</h2><p>Saathi already knows your meals, your focus hours, your prayer times and your bedtime. So it plans the movement around them, instead of asking you to.</p></div>
+    <div class="grid4">
+      <div class="fcard"><span class="ic" style="background:var(--lilac)"><svg viewBox="0 0 24 24"><ellipse cx="9" cy="7" rx="3" ry="4.5"/><ellipse cx="15" cy="15" rx="3" ry="4.5"/></svg></span><h3>A walk after each meal</h3><p>Ten minutes after you mark breakfast, lunch or dinner done. Fifteen to twenty-five minutes, depending on how far you are from 8,000 or 10,000 steps. Never in your focus hours, never in the hour before bed.</p></div>
+      <div class="fcard"><span class="ic" style="background:var(--rose)"><svg viewBox="0 0 24 24"><path d="M4 9v6M20 9v6M7 7v10M17 7v10M7 12h10"/></svg></span><h3>Three strength, two yoga</h3><p>A week at a time, on non-consecutive days. Saathi finds a free slot and proposes it; you move it if it doesn't suit. Skip three in a row and it offers a different time instead of repeating itself.</p></div>
+      <div class="fcard"><span class="ic" style="background:var(--cream)"><svg viewBox="0 0 24 24"><path d="M12 20c5-3 7-8 7-13-5 0-10 2-12 7 0 3 2 5 5 6z"/></svg></span><h3>Yoga for the stressful days</h3><p>Log a stressful day and a short calming session appears, with a breathing tip for everyone. Premium turns a session into illustrated step-by-step cards with a timer. Lighter sessions during your period.</p></div>
+      <div class="fcard"><span class="ic" style="background:var(--surface2)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12l5-3"/></svg></span><h3>BMI free, one target if you need it</h3><p>BMI sits live on the weight screen. If weight loss is part of your goal, Premium adds a single daily calorie target at a steady half a kilo a week &mdash; never below 1,200, switched off entirely for a low BMI or a recovery goal. Still no calorie logging.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="lead"><div class="eyebrow">Reliability, honestly</div><h2>What rings, on which phone</h2><p>On Android, meals and wake use full-screen exact alarms, and a setup wizard walks you through the battery settings on Xiaomi, Samsung, Oppo and Vivo. On iOS, reminders arrive as time-sensitive notifications; iOS doesn't let apps show full-screen alarms, so we don't claim it.</p></div>
+    <div class="twophones">
+      <div style="text-align:center"><div class="phone"><div class="screen"><div class="scr dark on" style="align-items:center;text-align:center;justify-content:center;gap:10px"><div class="eb">ANDROID · LOCK SCREEN</div><div class="mas-wrap" id="relMas"></div><div class="big">Lunch time</div><div class="sub">Full-screen alarm, rings until answered</div><div class="pill p" style="width:100%">I ate it</div></div></div></div><p style="margin-top:12px;font-size:13px">Full-screen exact alarm</p></div>
+      <div style="text-align:center"><div class="phone"><div class="screen"><div class="scr dark on" style="justify-content:center;gap:10px"><div class="eb" style="text-align:center">IOS · LOCK SCREEN</div><div style="font-size:40px;font-weight:300;text-align:center;color:#fff">1:00</div><div class="card"><span class="circ" style="background:#F8BBD0"><svg viewBox="0 0 24 24"><path d="M4 12h16a8 8 0 0 1-16 0z"/></svg></span><div><b>Saathi</b><br>Lunch time · lentils + salad</div></div><div class="sub" style="text-align:center">Time-sensitive notification, breaks through Focus</div></div></div></div><p style="margin-top:12px;font-size:13px">Time-sensitive notification</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap sketch">
+    <div class="lead"><div class="eyebrow">Try it without signing up</div><h2>Sketch my day</h2><p>Three answers from the real onboarding. Saathi lays out a sample day in the phone, the same way it will for you.</p>
+      <div class="q"><div class="eyebrow">I wake up around</div><div class="chips" data-q="wake"><button class="chip" data-v="6">6:00</button><button class="chip on" data-v="7">7:00</button><button class="chip" data-v="9">9:00</button></div></div>
+      <div class="q"><div class="eyebrow">My days</div><div class="chips" data-q="work"><button class="chip on" data-v="home">Work from home</button><button class="chip" data-v="office">Office</button><button class="chip" data-v="study">Studying</button><button class="chip" data-v="none">Not right now</button></div></div>
+      <div class="q"><div class="eyebrow">I'd walk</div><div class="chips" data-q="walk"><button class="chip" data-v="park">Park nearby</button><button class="chip on" data-v="tread">Treadmill</button><button class="chip" data-v="roof">Garden / rooftop</button></div></div>
+    </div>
+    <div class="phone small" style="width:260px;height:540px"><div class="screen"><div class="scr on" id="sketchScr" style="padding:48px 16px 20px"></div></div></div>
+  </div>
+</section>
+
+<section class="band lavband">
+  <div class="wrap grid2">
+    <div class="lead"><div class="eyebrow">For dietitians · Saathi Pro</div><h2>Your plans, delivered as reminders. Your clients, actually following them.</h2><p>Build a plan from the client's own intake, publish it into her phone with a diff she can review, chat with photo logs, and get paid per plan. Same app, lavender mode.</p><div style="margin-top:20px"><a class="btn" href="pro.html">See Saathi Pro</a></div></div>
+    <div class="fcard" style="background:rgba(255,255,255,.1);box-shadow:none;color:#F0DEE5">
+      <div class="eyebrow" style="color:#DCCFF0">Plan builder · live check</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px">
+        <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:10px"><b style="font-size:18px">6</b><br>items</div>
+        <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:10px"><b style="font-size:18px">3/3</b><br>protein ✓</div>
+        <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:10px"><b style="font-size:18px">4 h</b><br>max gap ✓</div>
+        <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:10px"><b style="font-size:18px">30 m</b><br>tea↔iron ✓</div>
+      </div>
+      <p style="font-size:13px;color:#DCCFF0">"Snack at 4:00 falls in her focus hours. Mark it 'always rings'?"</p>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="lead"><div class="eyebrow">Privacy</div><h2>Server-first, with a copy on your phone</h2><p>Your plan and logs sync to Saathi's servers so a new phone or a dietitian update just works, and a full copy stays on the device so alarms ring without signal. Some things never leave your control.</p></div>
+    <div class="privacy-list">
+      <div class="pv"><b>Dietitians see</b>your goal, kitchen, days and effort. Never your cycle or Together data.</div>
+      <div class="pv"><b>Allergies stay with you</b>They shape your plan and your swaps, and are never shared with a dietitian.</div>
+      <div class="pv"><b>Your lock screen shows</b>"Reminder" by default. Together is a heart. You choose to show more.</div>
+      <div class="pv"><b>You can</b>delete the account in two taps and the server copy goes with it. <a href="delete-account.html">How deletion works</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="pricing">
+  <div class="wrap">
+    <div class="lead"><div class="eyebrow">Pricing</div><h2>Free keeps you fed. Premium knows you.</h2><p>One month of Premium free, no card up front. Dietitian plans are bought separately, in-app.</p>
+      <div class="seg" style="margin-top:18px" role="group" aria-label="Billing period"><button class="on" id="segM" type="button">Monthly</button><button id="segY" type="button">Yearly · 2 months free</button></div>
+    </div>
+    <div class="price">
+      <div class="plan"><div class="eyebrow">Free</div><div class="amt">0<small> forever</small></div><ul><li>Meal and wake alarms that ring</li><li>Today timeline, swaps, import a plan</li><li>Post-meal walks, strength &amp; yoga slots, BMI</li><li>Basic progress and weekly recap</li><li>Dietitian marketplace at full price</li></ul><a class="btn ghost" href="#top">Get Saathi</a></div>
+      <div class="plan prem"><span class="peek" id="peekMas" aria-hidden="true"></span><div class="eyebrow">Premium · 1 month free</div><div class="amt"><span id="priceAmt">[PRICE]</span><small id="pricePer"> / month · your currency</small></div><ul><li>Local Guide: seasonal recipes, air and walk windows</li><li>Cycle insights and Together</li><li>Read with AI (coming), Saathi learns your patterns</li><li>Guided strength and yoga routines, step by step</li><li>Dietitian plans −30%, same-dietitian follow-ups −50%</li><li>Daily calorie target, dark mode</li></ul><a class="btn" href="#top">Start free month</a></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap" style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr;gap:24px;align-items:start">
+    <div><a class="logo" href="#top" style="font-size:16px;margin-bottom:10px"><span id="footMas"></span>Saathi</a><p style="font-size:13px;max-width:22rem">A diet-plan companion that rings like an alarm, swaps like a friend, and keeps your dietitian in the loop.</p></div>
+    <div><div class="eyebrow" style="margin-bottom:10px">Product</div><a href="features.html">Features</a><br><a href="plan-check.html">Check my plan</a><br><a href="pcos.html">For PCOS</a><br><a href="weight-loss.html">For weight loss</a><br><a href="pricing.html">Pricing</a><br><a href="download.html">Download</a><br><a href="recipes.html">Recipes</a><br><a href="reliability.html">Alarm reliability</a></div>
+    <div><div class="eyebrow" style="margin-bottom:10px">Dietitians</div><a href="pro.html">Saathi Pro</a><br><a href="dietitians.html">Directory</a><br><a href="partners.html">Partners</a></div>
+    <div><div class="eyebrow" style="margin-bottom:10px">Company</div><a href="about.html">About</a><br><a href="blog.html">Blog</a><br><a href="press.html">Press kit</a><br><a href="contact.html">Contact &amp; careers</a></div>
+    <div><div class="eyebrow" style="margin-bottom:10px">Trust</div><a href="help.html">Help centre</a><br><a href="privacy.html">Privacy</a><br><a href="terms.html">Terms</a><br><a href="disclaimer.html">Health disclaimer</a><br><a href="security.html">Security</a><br><a href="delete-account.html">Delete my account</a></div>
+  </div>
+  <div class="wrap" style="margin-top:28px">© 2026 Saathi · Lahore · Dubai · Saathi is not a medical service; dietitians are independent professionals.</div>
+</footer>
+<style>footer a{display:inline-block;margin:0 0 8px;color:var(--head);font-size:14px}@media (max-width:860px){footer .wrap{grid-template-columns:1fr 1fr!important}}@media (max-width:480px){footer .wrap{grid-template-columns:1fr!important}}</style>
+
+<script>
+/* ---------- mascot ---------- */
+function mascot(pose, size, opts) {
+  opts = opts || {};
+  const face = opts.face || '#F8BBD0', petal = opts.petal || '#E1BEE7', ink = '#5A1E38';
+  const arms = {
+    default: '',
+    waving: '<path class="arm wave" d="M22 70 Q10 50 24 40" fill="none" stroke="#F48FB1" stroke-width="10" stroke-linecap="round"/>',
+    cheering: '<path class="arm cheer" d="M22 60 Q8 40 20 28" fill="none" stroke="#F48FB1" stroke-width="10" stroke-linecap="round"/><path class="arm cheer" d="M98 60 Q112 40 100 28" fill="none" stroke="#F48FB1" stroke-width="10" stroke-linecap="round"/>',
+    sleepy: '',
+    shh: ''
+  }[pose] || '';
+  const eyes = pose === 'sleepy' ? '<path d="M44 69h8M68 69h8" stroke="' + ink + '" stroke-width="2.8" stroke-linecap="round"/>'
+    : (pose === 'cheering' || pose === 'shh') ? '<path d="M44 68 Q48 64 52 68M68 68 Q72 64 76 68" fill="none" stroke="' + ink + '" stroke-width="2.8" stroke-linecap="round"/>'
+    : '<circle class="eye" cx="48" cy="68" r="3.8" fill="' + ink + '"/><circle class="eye r" cx="72" cy="68" r="3.8" fill="' + ink + '"/>';
+  const mouth = pose === 'cheering' ? '<path d="M49 79 Q60 92 71 79z" fill="' + ink + '"/>'
+    : pose === 'sleepy' ? '<path d="M54 82 Q60 85 66 82" fill="none" stroke="' + ink + '" stroke-width="2.8" stroke-linecap="round"/>'
+    : pose === 'shh' ? '<circle cx="60" cy="83" r="3" fill="' + ink + '"/><path d="M30 92 Q45 100 58 84" fill="none" stroke="#F48FB1" stroke-width="9" stroke-linecap="round"/>'
+    : '<path d="M51 80 Q60 88 69 80" fill="none" stroke="' + ink + '" stroke-width="2.8" stroke-linecap="round"/>';
+  const zz = pose === 'sleepy' ? '<text x="90" y="50" font-size="14" font-weight="700" fill="#9575CD" font-family="Poppins">z</text>' : '';
+  return '<svg class="mas" viewBox="0 0 120 120" width="' + size + '" height="' + size + '" aria-hidden="true">' + arms +
+    '<ellipse cx="60" cy="72" rx="42" ry="38" fill="' + face + '"/>' +
+    '<g transform="translate(86 30)"><circle cx="0" cy="-9" r="6" fill="' + petal + '"/><circle cx="8.5" cy="-3" r="6" fill="' + petal + '"/><circle cx="5.5" cy="7" r="6" fill="' + petal + '"/><circle cx="-5.5" cy="7" r="6" fill="' + petal + '"/><circle cx="-8.5" cy="-3" r="6" fill="' + petal + '"/><circle cx="0" cy="0" r="4" fill="#C9A227"/></g>' +
+    '<circle cx="40" cy="80" r="6" fill="#F48FB1" opacity=".7"/><circle cx="80" cy="80" r="6" fill="#F48FB1" opacity=".7"/>' + eyes + mouth + zz + '</svg>';
+}
+const $ = s => document.querySelector(s);
+$('#logoMas').innerHTML = mascot('default', 30); $('#footMas').innerHTML = mascot('default', 26);
+$('#heroMas').innerHTML = mascot('default', 120);
+$('#hsMas').innerHTML = mascot('waving', 120, { face: '#F4A9C8' });
+$('#hsMas2').innerHTML = mascot('cheering', 120);
+$('#shhMas').innerHTML = mascot('shh', 40);
+$('#relMas').innerHTML = mascot('waving', 90, { face: '#F4A9C8' });
+$('#peekMas').innerHTML = mascot('default', 72);
+
+/* ---------- live clock chip ---------- */
+const schedule = [
+  [5, 7, 'warm water first, then a slow stretch'], [7, 9, 'breakfast window — egg bhurji or oats'], [9, 11, 'focus hours · reminders are quiet'],
+  [11, 12, 'iron now, tea in 30 minutes'], [12, 14, 'lunch time — lentils + salad'], [14, 16, 'sip of water, stand up once'],
+  [16, 17, 'snack · fruit + a boiled egg'], [17, 19, 'green tea + a 20-minute walk'], [19, 21, 'dinner, done by 9:30'],
+  [21, 23, 'wind down · water stops at ten'], [23, 29, 'sleep well — fresh start tomorrow']
+];
+function tick() {
+  const d = new Date(); let h = d.getHours(), m = d.getMinutes();
+  const hh = (h % 12) || 12, ap = h < 12 ? 'AM' : 'PM';
+  $('#clockT').textContent = hh + ':' + String(m).padStart(2, '0') + ' ' + ap;
+  const hx = h < 5 ? h + 24 : h;
+  const row = schedule.find(r => hx >= r[0] && hx < r[1]) || schedule[0];
+  $('#clockMsg').textContent = '· ' + row[2];
+}
+tick(); setInterval(tick, 30000);
+
+/* ---------- hero alarm interactions ---------- */
+const show = id => { ['hsAlarm', 'hsCeleb', 'hsSwapS'].forEach(k => $('#' + k).classList.toggle('on', k === id)); };
+function toast(t) { const el = $('#hsToast'); el.textContent = t; el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 2200); }
+function confettiBurst() {
+  const c = $('#confetti'); c.innerHTML = '';
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cols = ['#F8BBD0', '#E1BEE7', '#C9A227', '#F48FB1'];
+  for (let i = 0; i < 24; i++) { const s = document.createElement('i'); s.style.left = (Math.random() * 100) + '%'; s.style.background = cols[i % 4]; s.style.animationDelay = (Math.random() * .4) + 's'; s.style.transform = 'rotate(' + Math.random() * 180 + 'deg)'; c.appendChild(s); }
+}
+$('#hsEaten').onclick = () => { show('hsCeleb'); confettiBurst(); };
+$('#hsAgain').onclick = () => show('hsAlarm');
+$('#hsSnooze').onclick = () => toast('10 more minutes. Two snoozes left.');
+$('#hsSwap').onclick = () => show('hsSwapS');
+$('#hsSwapDone').onclick = () => { show('hsCeleb'); confettiBurst(); };
+['Roti + salan', 'Chicken + roti', 'Daal + rice', 'Yogurt + fruit'].forEach((t, i) => { const b = document.createElement('button'); b.className = 'chip' + (i === 0 ? ' on' : ''); b.textContent = t; b.type = 'button'; b.onclick = () => { [...$('#hsChips').children].forEach(x => x.classList.remove('on')); b.classList.add('on'); $('#hsSwapDone').textContent = 'Log ' + t.toLowerCase(); }; $('#hsChips').appendChild(b); });
+const meals = [[7, '7:00 AM · WAKE', 'Good morning', 'Warm water first. Breakfast at 8:30.'], [8.5, '8:30 AM · BREAKFAST', 'Breakfast time', 'Egg bhurji + 1 roti, or oats with yogurt.'], [13, '1:00 PM · LUNCH', 'Lunch time', 'Lentils + salad. Option C if you\'d rather: roti + salan.'], [16, '4:00 PM · SNACK', 'Snack time', 'Fruit + a boiled egg.'], [20, '8:00 PM · DINNER', 'Dinner time', 'Grilled fish + vegetables, or daal + 1 roti.']];
+$('#ringBtn').onclick = () => {
+  const d = new Date(); const now = d.getHours() + d.getMinutes() / 60;
+  const next = meals.find(x => x[0] > now) || meals[0];
+  $('#hsTime').textContent = next[1]; $('#hsAlarm').querySelector('.big').textContent = next[2]; $('#hsMeal').textContent = next[3];
+  show('hsAlarm'); $('#heroPhone').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const ph = $('#heroPhone'); ph.style.transition = 'transform .1s'; let n = 0; const iv = setInterval(() => { ph.style.transform = 'translateX(' + (n % 2 ? 3 : -3) + 'px)'; if (++n > 8) { clearInterval(iv); ph.style.transform = ''; } }, 80);
+};
+
+/* ---------- day screens ---------- */
+const card = (bg, icon, title, sub) => '<div class="card"><span class="circ" style="background:' + bg + '"><svg viewBox="0 0 24 24">' + icon + '</svg></span><div style="flex:1"><b>' + title + '</b>' + (sub ? '<br><span style="font-size:10px;color:inherit;opacity:.7">' + sub + '</span>' : '') + '</div></div>';
+const I = { meal: '<path d="M4 12h16a8 8 0 0 1-16 0z"/>', cap: '<rect x="4" y="9" width="16" height="7" rx="3.5" transform="rotate(-35 12 12.5)"/>', water: '<path d="M12 3s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11z"/>', steps: '<ellipse cx="9" cy="7" rx="3" ry="4.5"/><ellipse cx="15" cy="15" rx="3" ry="4.5"/>', moon: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>', focus: '<rect x="3" y="7" width="18" height="13" rx="3"/><path d="M3 12h18"/>', heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>', leaf: '<path d="M12 20c5-3 7-8 7-13-5 0-10 2-12 7 0 3 2 5 5 6z"/>' };
+const todayHead = (chip) => '<div style="display:flex;justify-content:space-between;align-items:center"><div class="eb">TUESDAY · DAY 12</div>' + (chip || '') + '</div>';
+const path = (now) => '<div class="day-path">' + [['7:00', 'Wake'], ['8:30', 'Breakfast'], ['11:00', 'Iron + tea'], ['1:00', 'Lunch'], ['4:00', 'Snack'], ['5:30', 'Walk'], ['8:00', 'Dinner']].map((r, i) => '<div><span class="t">' + r[0] + '</span><span class="node ' + (i < now ? 'done' : i === now ? 'now' : '') + '"></span>' + r[1] + '</div>').join('') + '</div>';
+const screens = {
+  wake: ['dark', '<div class="eb">7:00 AM · WAKE</div><div class="mas-wrap">' + mascot('waving', 110, { face: '#F4A9C8' }) + '</div><div style="text-align:center"><div class="big">Good morning</div><div class="sub">Warm water first, then a slow stretch.</div></div><div style="flex:1"></div><div class="pill p">I\'m up</div><div class="pill s">Snooze 10</div>'],
+  bfast: ['dark', '<div class="eb">8:30 AM · BREAKFAST</div><div class="mas-wrap">' + mascot('default', 100, { face: '#F4A9C8' }) + '</div><div style="text-align:center"><div class="big">Egg bhurji + 1 roti</div><div class="sub">Or option B: oats with yogurt</div></div><div style="flex:1"></div><div class="pill p">I ate it</div><div style="display:flex;gap:8px"><div class="pill s" style="flex:1">Something else</div><div class="pill s" style="flex:1">Snooze</div></div>'],
+  move: ['', todayHead() + card('#E1BEE7', I.water, 'Time to move a little', 'Stand up, stretch, and a sip of water') + '<div style="display:flex;gap:4px;justify-content:center">' + '<span class="cup f"></span>'.repeat(3) + '<span class="cup"></span>'.repeat(6) + '</div>' + path(2)],
+  focus: ['', todayHead('<span class="tag" style="background:#E1BEE7;color:#4A3663">FOCUS · 5:00</span>') + '<div class="mas-wrap">' + mascot('shh', 90) + '</div><div class="card" style="border:1.5px dashed #E1BEE7"><div><b>Iron is waiting</b><br><span style="font-size:10px;opacity:.7">No ring, you\'re in focus until 5:00</span></div></div>' + path(2)],
+  swap: ['dark', '<div style="flex:1"></div><div style="background:#FFF8F4;border-radius:22px 22px 0 0;margin:0 -18px -24px;padding:14px 16px 20px;display:flex;flex-direction:column;gap:8px;color:#3D2A32"><div style="width:32px;height:4px;border-radius:999px;background:#F6E3EA;align-self:center"></div><div class="big" style="font-size:16px">Ate something else?</div><div class="chips"><span class="chip on" style="height:30px;font-size:11px">Roti + salan</span><span class="chip" style="height:30px;font-size:11px">Chicken + roti</span><span class="chip" style="height:30px;font-size:11px">Daal + rice</span></div><div style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;color:#4A3663"><span style="width:16px;height:16px;border-radius:999px;background:#E1BEE7;display:inline-block"></span>Same category · protein kept</div><div class="pill p" style="height:40px;font-size:12px">Log roti + salan</div></div>'],
+  walk: ['', todayHead() + '<div class="card" style="flex-direction:column;align-items:center;gap:6px;padding:14px"><svg viewBox="0 0 100 100" width="90"><circle cx="50" cy="50" r="40" fill="none" stroke="#F6E3EA" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="#9575CD" stroke-width="10" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="70" transform="rotate(-90 50 50)"/><text x="50" y="56" text-anchor="middle" font-size="18" font-weight="700" fill="#5A1E38" font-family="Poppins">5.8k</text></svg><b>of 8k steps today</b></div>' + card('#F8BBD0', I.leaf, 'Good air till sunset', 'Treadmill if you\'d rather') + card('#F7E7B8', I.cap, 'Green tea + Vitamin D', '5:30 PM')],
+  cycle: ['', todayHead() + '<div class="card" style="background:#E1BEE7;flex-direction:column;align-items:flex-start;gap:4px"><span class="tag" style="background:#FFF8F4;color:#4A3663">DAY 18 · LUTEAL</span><b>Seeds today: sesame + sunflower</b><span style="font-size:10px">Phase changed yesterday</span></div>' + card('#F8BBD0', I.heart, 'Movie night together', 'Her pick · lock screen shows ❤ only') + card('#F6E3EA', I.moon, 'Quick check-in tomorrow', 'One question, 10:00 AM')],
+  bed: ['dark', '<div class="eb">11:00 PM · WIND DOWN</div><div class="mas-wrap">' + mascot('sleepy', 110, { face: '#F4A9C8' }) + '</div><div style="text-align:center"><div class="big">Time to wind down</div><div class="sub">Same time every night helps. Water stops now.</div></div><div style="flex:1"></div><div class="pill p">Going to sleep</div>'],
+  night: ['dark', '<div class="eb">TONIGHT</div><div class="big">7 of 9. Lovely.</div><div class="sub">Lunch was a swap, snack was late. Both count.</div>' + card('#F8BBD0', I.meal, '4 of 5 meals') + card('#E1BEE7', I.water, '7 of 9 cups') + card('#F7E7B8', I.steps, '6.2k steps') + '<div style="flex:1"></div><div class="sub" style="text-align:center">Fresh start at 7:00. Nothing carries over.</div>'],
+  week: ['', '<div class="eb">SUNDAY · WEEK 4</div><div class="big">Best week yet</div><div style="display:flex;align-items:flex-end;gap:6px;height:70px;padding:0 4px">' + [55, 80, 70, 40, 90, 85, 60].map((h, i) => '<span style="flex:1;height:' + h + '%;border-radius:6px;background:' + (i === 6 ? '#BF4F7E' : '#F8BBD0') + '"></span>').join('') + '</div><div style="display:flex;justify-content:space-between;font-size:9px;color:#8E6A79"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>' + card('#F7E7B8', I.steps, 'One thing for next week', 'Walk on Wednesday too?') + '<div class="pill p" style="height:40px;font-size:12px">Yes, add it</div>']
+};
+const ds = $('#dayScreens');
+Object.entries(screens).forEach(([k, v], i) => { const d = document.createElement('div'); d.className = 'scr ' + v[0] + (i === 0 ? ' on' : ''); d.dataset.k = k; d.innerHTML = v[1]; ds.appendChild(d); });
+const stepEls = [...document.querySelectorAll('.step')];
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { stepEls.forEach(s => s.classList.toggle('on', s === e.target)); [...ds.children].forEach(c => c.classList.toggle('on', c.dataset.k === e.target.dataset.scr)); } }), { rootMargin: '-45% 0px -45% 0px' });
+stepEls.forEach(s => io.observe(s));
+
+/* ---------- sky: scroll scrubs the day ---------- */
+const stops = [[0, [255, 248, 244]], [.3, [253, 239, 228]], [.55, [243, 217, 226]], [.66, [176, 111, 142]], [.74, [92, 47, 74]], [1, [36, 24, 32]]];
+function lerpSky(t) { for (let i = 1; i < stops.length; i++) { if (t <= stops[i][0]) { const a = stops[i - 1], b = stops[i], u = (t - a[0]) / (b[0] - a[0]); return 'rgb(' + a[1].map((c, j) => Math.round(c + (b[1][j] - c) * u)).join(',') + ')'; } } return 'rgb(36,24,32)'; }
+let night = false;
+function sky() {
+  const max = document.documentElement.scrollHeight - innerHeight; const t = max > 0 ? Math.min(1, scrollY / max) : 0;
+  document.documentElement.style.setProperty('--sky', lerpSky(t));
+  const n = t > .655; if (n !== night) { night = n; document.documentElement.setAttribute('data-theme', n ? 'dark' : 'light'); }
+}
+addEventListener('scroll', sky, { passive: true }); addEventListener('resize', sky); sky();
+
+/* ---------- scroll-in animations ---------- */
+const anim = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; const el = e.target; el.classList.add('on');
+  if (el.id === 'cycleRing') { let d = 1; const iv = setInterval(() => { d++; $('#cycleDay').textContent = d; $('#cyclePhase').textContent = d <= 14 ? 'flax + pumpkin' : 'sesame + sunflower'; if (d >= 28) clearInterval(iv); }, 75); $('#cycleArc').style.strokeDashoffset = 0; }
+  if (el.id === 'effortRing') { $('#effortArc').style.strokeDashoffset = 402 * (1 - .78); let n = 0; const iv = setInterval(() => { n += 2; $('#effortNum').textContent = Math.min(78, n); if (n >= 78) clearInterval(iv); }, 35); [...$('#weekPills').children].forEach((p, i) => setTimeout(() => p.style.background = i < 5 ? 'var(--lilac)' : 'var(--surface2)', 200 + i * 120)); }
+  if (el.id === 'swapChips') { setTimeout(() => { const c = [...el.children]; c.reverse().forEach(x => el.appendChild(x)); el.children[0].classList.add('ok'); }, 500); }
+  anim.unobserve(el); }), { threshold: .4 });
+document.querySelectorAll('[data-anim]').forEach(el => anim.observe(el));
+for (let i = 0; i < 7; i++) { const p = document.createElement('span'); p.style.cssText = 'width:22px;height:22px;border-radius:999px;background:var(--surface2);transition:background .4s'; $('#weekPills').appendChild(p); }
+['Daal + rice', 'Chicken + roti', 'Yogurt + fruit', 'Roti + salan'].forEach(t => { const b = document.createElement('span'); b.className = 'chip'; b.textContent = t; $('#swapChips').appendChild(b); });
+
+/* ---------- sketch my day ---------- */
+const st = { wake: 7, work: 'home', walk: 'tread' };
+document.querySelectorAll('[data-q]').forEach(g => g.addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; [...g.children].forEach(x => x.classList.remove('on')); b.classList.add('on'); st[g.dataset.q] = isNaN(b.dataset.v) ? b.dataset.v : +b.dataset.v; sketch(); }));
+function fmt(h) { const hh = Math.floor(h), mm = Math.round((h - hh) * 60); const H = ((hh + 11) % 12) + 1; return H + ':' + String(mm).padStart(2, '0') + (hh < 12 ? ' AM' : ' PM'); }
+function sketch() {
+  const w = st.wake, focus = st.work !== 'none', walkLabel = { park: 'Walk · park', tread: 'Walk · treadmill', roof: 'Walk · rooftop' }[st.walk];
+  const rows = [[w, 'Wake · warm water', I.moon, '#E1BEE7'], [w + 1.5, 'Breakfast', I.meal, '#F8BBD0'], [w + 4, 'Iron · tea in 30', I.cap, '#F7E7B8'], [w + 6, 'Lunch', I.meal, '#F8BBD0'], [w + 9, 'Snack', I.meal, '#F8BBD0'], [w + 10.5, walkLabel, I.steps, '#E1BEE7'], [w + 13, 'Dinner', I.meal, '#F8BBD0'], [w + 16, 'Wind down', I.moon, '#E1BEE7']];
+  const fS = focus ? (st.work === 'study' ? w + 2 : w + 2) : null, fE = focus ? (st.work === 'study' ? w + 7 : w + 10) : null;
+  $('#sketchScr').innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><div class="eb">YOUR SAMPLE DAY</div>' + (focus ? '<span class="tag" style="background:#E1BEE7;color:#4A3663">FOCUS ' + fmt(fS).replace(' ', '') + '–' + fmt(fE).replace(' ', '') + '</span>' : '') + '</div><div class="day-path" style="gap:7px">' + rows.map(r => { const inF = focus && r[0] >= fS && r[0] < fE && !/Lunch|Breakfast|Snack|Dinner/.test(r[1]); return '<div><span class="t">' + fmt(r[0]).replace(/ [AP]M/, '') + '</span><span class="circ" style="width:26px;height:26px;background:' + r[3] + '"><svg viewBox="0 0 24 24" style="width:14px;height:14px">' + r[2] + '</svg></span><span style="flex:1">' + r[1] + '</span>' + (inF ? '<span class="tag" style="background:#F6E3EA;color:#8E6A79">quiet</span>' : '') + '</div>'; }).join('') + '</div><div style="flex:1"></div><div class="sub" style="font-size:10px;text-align:center">' + (focus ? 'Reminders inside focus arrive as silent nudges. Meals still ring.' : 'No focus hours. Everything rings on time.') + '</div>';
+}
+sketch();
+
+/* ---------- pricing toggle ---------- */
+$('#segM').onclick = () => { $('#segM').classList.add('on'); $('#segY').classList.remove('on'); $('#pricePer').textContent = ' / month · your currency'; };
+$('#segY').onclick = () => { $('#segY').classList.add('on'); $('#segM').classList.remove('on'); $('#pricePer').textContent = ' / year · 2 months free'; };
+</script>
+
+</body></html>

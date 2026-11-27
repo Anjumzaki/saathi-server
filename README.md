@@ -30,7 +30,15 @@ src/
                            and DB services (otp, tokens, feeConfig, users)
   utils/                   errors, http helpers, crypto, time, logger
 tests/                     vitest: pure logic + HTTP wiring that needs no database
+public/                    the marketing website (static files), served by this app at / (see "Website")
 ```
+
+## Website
+
+The site in `public/` is served by the same app: pages at `/` (with or without `.html`), the API under `/v1`.
+`src/middleware/site.ts` sets the site's own security headers, caching, the https redirect (production) and the 404 page.
+Forms post to `POST /v1/site/waitlist` and `POST /v1/site/pro-application` (stored as `Lead`); read them with `GET /v1/admin/leads`.
+To host the site elsewhere later, move `public/` out and remove the `mountSite` line in `app.ts`.
 
 ## Environment variables
 

@@ -76,23 +76,33 @@ export function authRoutes(s: Services): Router {
   r.post('/otp/request', asyncHandler(async (req, res) => {
     const { email: addr } = parse(z.object({ email }), req.body);
     const pending = await User.exists({ email: addr, emailVerifiedAt: null, deletedAt: null });
+    // Codes are only for confirming a sign-up. Sign-in is by password, so an unknown or already
+    // confirmed address gets the same answer and no email (never reveals which addresses exist).
+    if (!pending) { res.json({ ok: true, resendAfterSeconds: 60 }); return; }
     const { code: c, resendAfterSeconds } = await issueOtp(`email:${addr}`);
-    await sendCode(addr, pending ? 'verify' : 'signin', c);
+    await sendCode(addr, 'verify', c);
     res.json({ ok: true, resendAfterSeconds });
   }));
 
+  /**
+   * Confirms a sign-up. This is NOT a way to sign in: it never creates an account and it refuses
+   * an address that is already confirmed (those sign in with their password).
+   * The password is sent again here and is the one that is kept: whoever can read the mailbox
+   * decides the password, so someone who signed up first with her address cannot keep theirs.
+   */
   r.post('/otp/verify', asyncHandler(async (req, res) => {
-    const { email: addr, code: c, signup: form } = parse(z.object({ email, code, signup: signup.optional() }), req.body);
+    const { email: addr, code: c, password: pw } = parse(z.object({ email, code, password: password.optional(), signup: signup.optional() }), req.body);
     await checkOtp(`email:${addr}`, c);
-    const now = new Date();
-    let u = await User.findOne({ email: addr });
-    // Created moments ago by /signup and never confirmed: this call completes that sign-up,
-    // so the app should treat it as a new account even though the row already existed.
-    const isNew = !u || !u.emailVerifiedAt;
-    // Created by /signup and waiting, or brand new from this code: either way the mailbox is now proven.
-    u ??= await User.create({ email: addr, emailVerifiedAt: now, ...fieldsForNewUser(form, now) });
+    const u = await User.findOne({ email: addr }).select('+passwordHash');
+    if (!u || u.deletedAt) throw new ApiError(404, 'no_account', 'There is no account waiting for this email. Sign up first.');
+    if (u.emailVerifiedAt) throw new ApiError(403, 'use_password', 'This email is already confirmed. Sign in with your password.');
+    if (!pw) throw new ApiError(400, 'password_required', 'Enter your password again to finish signing up.');
+    u.passwordHash = await hashPassword(pw);
+    u.failedLogins = 0;
+    u.loginLockedUntil = null;
+    await u.save();
     await markEmailVerified(u);
-    res.json(await finishSignIn(u, isNew));
+    res.json(await finishSignIn(u, true));
   }));
 
   // ----- email + password -----
