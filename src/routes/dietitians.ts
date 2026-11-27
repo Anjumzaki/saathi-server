@@ -9,7 +9,7 @@ import { User } from '../models/User';
 import { clientOrderView, dueLine } from '../services/dietitianClients';
 import { PAYOUT_NOTE, summariseEarnings, type EarningRow } from '../services/dietitianEarnings';
 import {
-  canAddDocument, documentProblemMessage, documentView, liveDocuments, profileCompleteness,
+  canAddDocument, documentProblemMessage, documentView, profileCompleteness,
   proProfileSchema, reviewBody, reviewHeadline, reviewStateOf, submitBlock, submitBlockMessage,
   tidyProfile, unknownBands,
 } from '../services/dietitianProfile';
@@ -178,7 +178,11 @@ export function dietitianRoutes(): Router {
 
   r.post('/me/submit', asyncHandler(async (req, res) => {
     const p = await myProfile(req);
-    const block = submitBlock({ ...(p.toObject() as never), status: p.status, documents: p.documents });
+    const block = submitBlock({
+      displayName: p.displayName, credentials: p.credentials, specialties: p.specialties, languages: p.languages,
+      yearsOfPractice: p.yearsOfPractice, countries: p.countries, cities: p.cities, bandIds: p.bandIds,
+      status: p.status, documents: p.documents,
+    });
     if (block) throw conflict(submitBlockMessage(block), block === 'wrong_status' ? 'invalid_transition' : block);
     p.status = 'submitted';
     p.submittedAt = new Date();
@@ -266,6 +270,3 @@ export function dietitianRoutes(): Router {
 
   return r;
 }
-
-/** Exported so a future route can list only what she is allowed to see. */
-export const visibleDocumentsOf = (p: ProfileDoc) => liveDocuments(p.documents.map((d) => d.toObject() as never));
